@@ -81,6 +81,8 @@ export class UserAccount {
     this.#isActive = value;
   }
 
+// Move to controller
+
   setPassword(rawPassword) {
     if (rawPassword == null) {
       throw new TypeError("Password cannot be null or undefined");
