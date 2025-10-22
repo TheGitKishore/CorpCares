@@ -116,38 +116,51 @@ export class UserAccount {
     }
   }
 
-  static async viewUserAccounts() {
-    const client = await this.#pool.connect();
-    try {
-      const result = await client.query(
-        `SELECT username, name, password, userProfile, email, dateCreated, isActive
-         FROM UserAccount`
-      );
+static async viewUserAccounts() {
+  const client = await this.#pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT 
+         ua.username,
+         ua.name,
+         ua.password,
+         ua.email,
+         ua.dateCreated,
+         ua.isActive,
+         up.roleName,
+         up.description
+       FROM UserAccount ua
+       JOIN UserProfile up ON ua.userProfile = up.roleName`
+    );
 
-      return result.rows.map(row => {
-        const password = new Password();
-        Object.defineProperty(password, 'hash', {
-          value: row.password,
-          writable: false
-        });
-
-        //const profile = new UserProfile(row.userprofile); // Adjust constructor if needed
-
-        const account = new UserAccount(
-          row.username,
-          row.name,
-          password,
-          row.email,
-          profile
-        );
-        account.dateCreated = new Date(row.datecreated);
-        account.isActive = row.isactive;
-        return account;
+    return result.rows.map(row => {
+      // Reconstruct Password object
+      const password = new Password();
+      Object.defineProperty(password, 'hash', {
+        value: row.password,
+        writable: false
       });
-    } finally {
-      client.release();
-    }
+
+      // Reconstruct UserProfile object
+      const profile = new UserProfile(row.roleName, row.description);
+
+      // Reconstruct UserAccount entity
+      const account = new UserAccount(
+        row.username,
+        row.name,
+        password,
+        row.email,
+        profile
+      );
+      account.dateCreated = new Date(row.datecreated);
+      account.isActive = row.isactive;
+
+      return account;
+    });
+  } finally {
+    client.release();
   }
+}
 
   // ─── Utility Methods ────────
 
