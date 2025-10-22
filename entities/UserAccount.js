@@ -7,23 +7,26 @@ export class UserAccount {
 
   #id;
   #username;
+  #name;
   #passwordHash;
   #email;
   #profile;
   #dateCreated;
   #isActive;
 
-  constructor(username, raw_password, email, profile) {
+  constructor(username, name, passwordHash, email, profile) {
+
     this.#id = UserAccount.#nextId++;
     this.#username = username;
-    this.setPassword(raw_password);
-    this.#email = email;
+    this.#name = name;
 
-    if (!(profile instanceof UserProfile)) {
-      throw new TypeError("Expected profile to be a instance of UserProfile");
+    if (!(passwordHash instanceof Password)) {
+      throw new TypeError("Expected passwordHash to be an instance of Password");
     }
+    this.#passwordHash = passwordHash;
+    
+    this.#email = email;
     this.#profile = profile;
-
     this.#dateCreated = new Date();
     this.#isActive = true;
   }
@@ -38,6 +41,15 @@ export class UserAccount {
 
   set username(value) {
     this.#username = value;
+  }
+
+  
+  get name() {
+    return this.#name;
+  }
+
+  set name(value) {
+    this.#name = value;
   }
 
   get email() {
@@ -81,22 +93,12 @@ export class UserAccount {
     this.#isActive = value;
   }
 
-// Move to controller
-
-  setPassword(rawPassword) {
-    if (rawPassword == null) {
-      throw new TypeError("Password cannot be null or undefined");
-    }
-    const passwordStr = String(rawPassword);
-    this.#passwordHash = new Password(passwordStr);
-  }
-
-  verifyPassword(inputPassword) {
-    if (!(this.#passwordHash instanceof Password)) {
-      throw new TypeError("Password hash must be a Password instance");
-    }
-    return this.#passwordHash.verify(inputPassword);
-  }
+  //verifyPassword(inputPassword) {
+    //if (!(this.#passwordHash instanceof Password)) {
+      //throw new TypeError("Password hash must be a Password instance");
+    //}
+    //return this.#passwordHash.verify(inputPassword);
+  //}
 
   toString() {
     return `[UserAccount: ${this.#username}]`;
