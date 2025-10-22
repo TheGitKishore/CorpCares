@@ -17,6 +17,26 @@ export class ServiceCategory{
     }
 
     get title(){
-        return null
+        return this.#title;
     }
+
+    set title(newTitle){
+        if (typeof newTitle !== 'string') {
+            throw new TypeError("Title must be a string!");
+        }
+        this.#title = newTitle;
+    }
+
+    get description(){
+        return this.#description
+    }
+
+    set description(newDescription){
+        if (typeof newDescription !== 'string') {
+            throw new TypeError("Description must be a string!");
+        }
+        this.#description = newDescription;      
+    }
+
+    
 }
