@@ -6,9 +6,8 @@ export class UserProfile {
   #roleId;
   #roleName;
   #description;
-  #permissions;
 
-  constructor(roleName, description, permissions) {
+  constructor(roleName, description) {
     
     if (typeof roleName !== 'string') {
       throw new TypeError("roleName must be a string");
@@ -16,14 +15,10 @@ export class UserProfile {
     if (typeof description !== 'string') {
       throw new TypeError("description must be a string");
     }
-    if (!(permissions instanceof Permissions)) {
-      throw new TypeError("permissions must be an instance of Permissions");
-    }
 
     this.#roleId = UserProfile.#nextRoleId++;
     this.#roleName = roleName;
     this.#description = description;
-    this.#permissions = permissions;
   }
 
   get roleId() {
@@ -52,14 +47,4 @@ export class UserProfile {
     this.#description = value;
   }
 
-  get permissions() {
-    return this.#permissions;
-  }
-
-  set permissions(value) {
-    if (!(value instanceof Permissions)) {
-      throw new TypeError("permissions must be an instance of Permissions");
-    }
-    this.#permissions = value;
-  }
 }
