@@ -1,4 +1,3 @@
-// Should also be controller!!
 import bcrypt from 'bcrypt';
 
 export class Password {
