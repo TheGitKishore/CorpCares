@@ -9,37 +9,37 @@ export class UserAccountCreationController {
     this.#userAccount = null;
   }
 
-  createUserAccount(username, rawPassword, profile, email, name) {
+  async createUserAccount(username, rawPassword, profile, email, name) {
     try {
-      // Validate required fields before proceeding
+      // Validate required fields
       if (!username || !email || !rawPassword || !profile) {
         throw new Error("Missing required fields.");
       }
 
-      // Ensure profile is a valid UserProfile instance
       if (!(profile instanceof UserProfile)) {
-        throw new TypeError("Expected Profile to be an instance of UserProfile.");
+        throw new TypeError("Expected profile to be an instance of UserProfile.");
       }
 
       if (rawPassword == null) {
-      throw new TypeError("Password cannot be null or undefined");
+        throw new TypeError("Password cannot be null or undefined");
       }
 
-      // Create a Password object to hash and encapsulate the password
-      const password = String(rawPassword)
-      const passwordHash = new Password(password);
+      // Check for duplicate username using static method on the entity
+      const exists = await UserAccount.existsByUsername(username);
+      if (exists) {
+        throw new Error(`Username '${username}' is already taken.`);
+      }
 
-      // Create the UserAccount entity with hashed password and profile
+      // Create the UserAccount entity
+      const passwordHash = new Password(String(rawPassword));
       this.#userAccount = new UserAccount(username, name, passwordHash, email, profile);
 
-      // Return the generated ID (via getter)
-      return this.#userAccount.id;
+      // Persist using the entity's own method
+      const userId = await this.#userAccount.createUserAccount();
+
+      return userId;
     } catch (error) {
-      // Wrap and rethrow with contextual message
       throw new Error(`User account creation failed: ${error.message}`);
     }
   }
 }
-
-//To add:
-//Validate duplicate usernames
