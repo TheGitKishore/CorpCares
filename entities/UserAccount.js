@@ -75,6 +75,77 @@ export class UserAccount {
     return this.#passwordHash;
   }
 
+  // ─── Creation Logic ─────
+  async createUserAccount() {
+    const client = await UserAccount.#pool.connect();
+    try {
+      const result = await client.query(
+        `INSERT INTO UserAccount (username, password, userProfile, email, name, dateCreated, isActive)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING userID`,
+        [
+          this.#username,
+          this.#passwordHash.hash,
+          this.#profile.name,
+          this.#email,
+          this.#name,
+          this.#dateCreated.toISOString(),
+          this.#isActive
+        ]
+      );
+      this.#id = result.rows[0].userid;
+      return this.#id;
+    } finally {
+      client.release();
+    }
+  }
+
+  // ─── View All Users ─────
+  static async viewUserAccounts() {
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT 
+           ua.userID,
+           ua.username,
+           ua.name,
+           ua.password,
+           ua.email,
+           ua.dateCreated,
+           ua.isActive,
+           up.roleName,
+           up.description
+         FROM UserAccount ua
+         JOIN UserProfile up ON ua.userProfile = up.roleName`
+      );
+
+      return result.rows.map(row => {
+        const password = new Password();
+        Object.defineProperty(password, 'hash', {
+          value: row.password,
+          writable: false
+        });
+
+        const profile = new UserProfile(row.rolename, row.description);
+
+        const account = new UserAccount(
+          row.username,
+          row.name,
+          password,
+          row.email,
+          profile
+        );
+        account.#id = row.userid;
+        account.dateCreated = new Date(row.datecreated);
+        account.isActive = row.isactive;
+
+        return account;
+      });
+    } finally {
+      client.release();
+    }
+  }
+
   // ─── Static Hydration ─────
   static async findById(userId) {
     const client = await this.#pool.connect();
