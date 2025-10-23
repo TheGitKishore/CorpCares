@@ -212,7 +212,8 @@ export class UserAccount {
   }
 
   // User Account Update Logic (DB) --> Fed by UserAccountUpdateController
-  async updateUserAccount(name, email, rawPassword, profile, isActive) {
+  async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
+    this.#username = username;
     this.#name = name;
     this.#email = email;
     this.#isActive = isActive;
@@ -229,13 +230,15 @@ export class UserAccount {
     try {
       const result = await client.query(
         `UPDATE UserAccount
-         SET name = $1,
-             email = $2,
-             password = $3,
-             userProfile = $4,
-             isActive = $5
-         WHERE userID = $6`,
+        SET username = $1,
+            name = $2,
+            email = $3,
+            password = $4,
+            userProfile = $5,
+            isActive = $6
+        WHERE userID = $7`,
         [
+          this.#username,
           this.#name,
           this.#email,
           this.#passwordHash.hash,

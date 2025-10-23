@@ -1,7 +1,3 @@
-import { UserAccount } from '../entities/UserAccount.js';
-import { Password } from '../entities/Password.js';
-import { UserProfile } from '../entities/UserProfile.js';
-
 export class UserAccountUpdateController {
   #userAccount;
 
@@ -22,9 +18,9 @@ export class UserAccountUpdateController {
     return new UserAccountUpdateController(userAccount);
   }
 
-  async updateUserAccount(name, email, rawPassword, profile, isActive) {
+  async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
     try {
-      if (!name || !email || !profile) {
+      if (!username || !name || !email || !profile) {
         throw new Error("Missing required fields.");
       }
 
@@ -41,6 +37,7 @@ export class UserAccountUpdateController {
       }
 
       const success = await this.#userAccount.updateUserAccount(
+        username,
         name,
         email,
         rawPassword,
@@ -57,4 +54,4 @@ export class UserAccountUpdateController {
 
 // Example boundary usage
 // const controller = await UserAccountUpdateController.findById(userId);
-// await controller.updateUserAccount(name, email, rawPassword, profile, isActive);
+// await controller.updateUserAccount(username, name, email, rawPassword, profile, isActive);
