@@ -36,7 +36,7 @@ export class UserAccount {
     this.#isActive = true;
   }
 
-  // ─── Getters and Setters ─────
+  // Local Getters and Setters (No DB logic)
   get id() { return this.#id; }
   get username() { return this.#username; }
   set username(value) { this.#username = value; }
@@ -75,7 +75,7 @@ export class UserAccount {
     return this.#passwordHash;
   }
 
-  //Find by username
+  //Check if exists using username (DB)
 
   static async existsByUsername(username) {
     const client = await this.#pool.connect();
@@ -90,7 +90,7 @@ export class UserAccount {
     }
   }
 
-  // ─── Creation Logic ─────
+  // Create Account Logic (DB) --> Fed by UserAccountCreationController
   async createUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
@@ -115,7 +115,7 @@ export class UserAccount {
     }
   }
 
-  // ─── View All Users ─────
+  // View All Accounts Logic (DB) --> Fed by UserAccountViewController
   static async viewUserAccounts() {
     const client = await this.#pool.connect();
     try {
@@ -161,7 +161,7 @@ export class UserAccount {
     }
   }
 
-  // ─── Static Hydration ─────
+  // Find by ID Logic (DB) --> Used to return data via ID input, used for UserAccountUpdateController
   static async findById(userId) {
     const client = await this.#pool.connect();
     try {
@@ -211,7 +211,7 @@ export class UserAccount {
     }
   }
 
-  // ─── Update Logic ─────
+  // User Account Update Logic (DB) --> Fed by UserAccountUpdateController
   async updateUserAccount(name, email, rawPassword, profile, isActive) {
     this.#name = name;
     this.#email = email;
@@ -250,7 +250,7 @@ export class UserAccount {
     }
   }
 
-  // ─── Utility Methods ────────
+  // Utility
   toString() {
     return `[UserAccount: ${this.#username}]`;
   }
