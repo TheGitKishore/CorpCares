@@ -250,6 +250,19 @@ export class UserAccount {
     }
   }
 
+  async deleteUserAccount() {
+    const client = await UserAccount.#pool.connect();
+    try {
+      const result = await client.query(
+        `DELETE FROM UserAccount WHERE userID = $1`,
+        [this.#id]
+      );
+      return result.rowCount === 1;
+    } finally {
+      client.release();
+    }
+  }
+
   // Utility
   toString() {
     return `[UserAccount: ${this.#username}]`;
