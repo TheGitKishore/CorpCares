@@ -75,6 +75,21 @@ export class UserAccount {
     return this.#passwordHash;
   }
 
+  //Find by username
+
+  static async existsByUsername(username) {
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT 1 FROM UserAccount WHERE username = $1 LIMIT 1',
+        [username]
+      );
+      return result.rowCount > 0;
+    } finally {
+      client.release();
+    }
+  }
+
   // ─── Creation Logic ─────
   async createUserAccount() {
     const client = await UserAccount.#pool.connect();
