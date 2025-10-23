@@ -11,8 +11,6 @@ export class UserAccount {
     port: 1234
   });
 
-  static #nextId = 1;
-
   #id;
   #username;
   #name;
@@ -23,7 +21,7 @@ export class UserAccount {
   #isActive;
 
   constructor(username, name, passwordHash, email, profile) {
-    this.#id = UserAccount.#nextId++;
+    this.#id = null;
     this.#username = username;
     this.#name = name;
 
@@ -39,7 +37,6 @@ export class UserAccount {
   }
 
   // ─── Getters and Setters ─────
-
   get id() { return this.#id; }
   get username() { return this.#username; }
   set username(value) { this.#username = value; }
@@ -53,7 +50,7 @@ export class UserAccount {
   get profile() { return this.#profile; }
   set profile(value) {
     if (!(value instanceof UserProfile)) {
-      throw new TypeError("Expected profile to be a instance of UserProfile");
+      throw new TypeError("Expected profile to be an instance of UserProfile");
     }
     this.#profile = value;
   }
@@ -78,73 +75,39 @@ export class UserAccount {
     return this.#passwordHash;
   }
 
-  // ─── Persistence Logic ─────
-
-  static async existsByUsername(username) {
+  // ─── Static Hydration ─────
+  static async findById(userId) {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        'SELECT 1 FROM UserAccount WHERE username = $1 LIMIT 1',
-        [username]
+        `SELECT 
+           ua.userID,
+           ua.username,
+           ua.name,
+           ua.password,
+           ua.email,
+           ua.dateCreated,
+           ua.isActive,
+           up.roleName,
+           up.description
+         FROM UserAccount ua
+         JOIN UserProfile up ON ua.userProfile = up.roleName
+         WHERE ua.userID = $1`,
+        [userId]
       );
-      return result.rowCount > 0;
-    } finally {
-      client.release();
-    }
-  }
 
-  async createUserAccount() {
-    const client = await UserAccount.#pool.connect();
-    try {
-      const result = await client.query(
-        `INSERT INTO UserAccount (username, password, userProfile, email, name, dateCreated, isActive)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING userID`,
-        [
-          this.#username,
-          this.#passwordHash.hash,
-          this.#profile.name,
-          this.#email,
-          this.#name,
-          this.#dateCreated.toISOString(),
-          this.#isActive
-        ]
-      );
-      return result.rows[0].userid;
-    } finally {
-      client.release();
-    }
-  }
+      if (result.rowCount === 0) return null;
 
-static async viewUserAccounts() {
-  const client = await this.#pool.connect();
-  try {
-    const result = await client.query(
-      `SELECT 
-         ua.username,
-         ua.name,
-         ua.password,
-         ua.email,
-         ua.dateCreated,
-         ua.isActive,
-         up.roleName,
-         up.description
-       FROM UserAccount ua
-       JOIN UserProfile up ON ua.userProfile = up.roleName`
-    );
+      const row = result.rows[0];
 
-    return result.rows.map(row => {
-      // Reconstruct Password object
       const password = new Password();
       Object.defineProperty(password, 'hash', {
         value: row.password,
         writable: false
       });
 
-      // Reconstruct UserProfile object
-      const profile = new UserProfile(row.roleName, row.description);
+      const profile = new UserProfile(row.rolename, row.description);
 
-      // Reconstruct UserAccount entity
       const account = new UserAccount(
         row.username,
         row.name,
@@ -152,18 +115,56 @@ static async viewUserAccounts() {
         row.email,
         profile
       );
+      account.#id = row.userid;
       account.dateCreated = new Date(row.datecreated);
       account.isActive = row.isactive;
 
       return account;
-    });
-  } finally {
-    client.release();
+    } finally {
+      client.release();
+    }
   }
-}
+
+  // ─── Update Logic ─────
+  async updateUserAccount(name, email, rawPassword, profile, isActive) {
+    this.#name = name;
+    this.#email = email;
+    this.#isActive = isActive;
+
+    const passwordHash = new Password(String(rawPassword));
+    Object.defineProperty(this.#passwordHash, 'hash', {
+      value: passwordHash.hash,
+      writable: false
+    });
+
+    this.#profile = profile;
+
+    const client = await UserAccount.#pool.connect();
+    try {
+      const result = await client.query(
+        `UPDATE UserAccount
+         SET name = $1,
+             email = $2,
+             password = $3,
+             userProfile = $4,
+             isActive = $5
+         WHERE userID = $6`,
+        [
+          this.#name,
+          this.#email,
+          this.#passwordHash.hash,
+          this.#profile.name,
+          this.#isActive,
+          this.#id
+        ]
+      );
+      return result.rowCount === 1;
+    } finally {
+      client.release();
+    }
+  }
 
   // ─── Utility Methods ────────
-
   toString() {
     return `[UserAccount: ${this.#username}]`;
   }

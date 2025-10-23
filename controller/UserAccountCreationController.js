@@ -9,9 +9,19 @@ export class UserAccountCreationController {
     this.#userAccount = null;
   }
 
+  /**
+   * Validates input, constructs UserAccount entity, and delegates persistence.
+   * 
+   * @param {string} username - Unique username.
+   * @param {string} rawPassword - Raw password string.
+   * @param {UserProfile} profile - Role profile object.
+   * @param {string} email - Email address.
+   * @param {string} name - Display name.
+   * @returns {Promise<number>} - The database-generated userID.
+   */
   async createUserAccount(username, rawPassword, profile, email, name) {
     try {
-      // Validate required fields
+      // ─── Validate required fields ─────────────────────────────
       if (!username || !email || !rawPassword || !profile) {
         throw new Error("Missing required fields.");
       }
@@ -21,22 +31,21 @@ export class UserAccountCreationController {
       }
 
       if (rawPassword == null) {
-        throw new TypeError("Password cannot be null or undefined");
+        throw new TypeError("Password cannot be null or undefined.");
       }
 
-      // Check for duplicate username using static method on the entity
+      // ─── Check for duplicate username ────────────────────────
       const exists = await UserAccount.existsByUsername(username);
       if (exists) {
         throw new Error(`Username '${username}' is already taken.`);
       }
 
-      // Create the UserAccount entity
+      // ─── Construct entity ────────────────────────────────────
       const passwordHash = new Password(String(rawPassword));
       this.#userAccount = new UserAccount(username, name, passwordHash, email, profile);
 
-      // Persist using the entity's own method
+      // ─── Persist and receive DB-generated userID ─────────────
       const userId = await this.#userAccount.createUserAccount();
-
       return userId;
     } catch (error) {
       throw new Error(`User account creation failed: ${error.message}`);
