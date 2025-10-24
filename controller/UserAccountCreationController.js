@@ -11,13 +11,6 @@ export class UserAccountCreationController {
 
   /**
    * Validates input, constructs UserAccount entity, and delegates persistence.
-   * 
-   * @param {string} username - Unique username.
-   * @param {string} rawPassword - Raw password string.
-   * @param {UserProfile} profile - Role profile object.
-   * @param {string} email - Email address.
-   * @param {string} name - Display name.
-   * @returns {Promise<number>} - The database-generated userID.
    */
   async createUserAccount(username, rawPassword, profile, email, name) {
     try {
