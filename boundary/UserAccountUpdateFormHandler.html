@@ -51,9 +51,6 @@
 </head>
 <body>
   <form id="updateForm">
-    <label for="userId">User ID</label>
-    <input type="number" id="userId" required />
-
     <label for="username">Username</label>
     <input type="text" id="username" required />
 
@@ -83,11 +80,27 @@
     import { UserProfile } from './entities/UserProfile.js';
 
     const form = document.getElementById('updateForm');
+    const userId = parseInt(sessionStorage.getItem('userId'), 10);
+
+    if (!userId) {
+      alert("User ID not found. Please start from the lookup page.");
+      window.location.href = 'UserAccountUpdateLookUpFormHandler.html';
+    }
+
+    let controller = null;
+
+    (async () => {
+      try {
+        controller = await UserAccountUpdateController.findById(userId);
+      } catch (error) {
+        alert(error.message);
+        window.location.href = 'UserAccountUpdateLookUpFormHandler.html';
+      }
+    })();
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const userId = parseInt(document.getElementById('userId').value, 10);
       const username = document.getElementById('username').value.trim();
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim();
@@ -98,21 +111,13 @@
       const profile = new UserProfile(roleId);
 
       try {
-        const controller = await UserAccountUpdateController.findById(userId);
         const success = await controller.updateUserAccount(
-          username,
-          name,
-          email,
-          rawPassword,
-          profile,
-          isActive
+          username, name, email, rawPassword, profile, isActive
         );
 
-        if (success) {
-          alert(`User account with ID ${userId} updated successfully.`);
-        } else {
-          alert(`Update failed for user ID ${userId}.`);
-        }
+        alert(success
+          ? `User account with ID ${userId} updated successfully.`
+          : `Update failed for user ID ${userId}.`);
       } catch (error) {
         alert(error.message);
       }
