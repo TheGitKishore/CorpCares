@@ -76,8 +76,8 @@
   </form>
 
   <script type="module">
-    import { UserAccountUpdateController } from './controller/UserAccountUpdateController.js';
-    import { UserProfile } from './entities/UserProfile.js';
+    import { UserAccountUpdateController } from '../controller/UserAccountUpdateController.js';
+    import { UserProfile } from '../entities/UserProfile.js';
 
     const form = document.getElementById('updateForm');
     const userId = parseInt(sessionStorage.getItem('userId'), 10);
