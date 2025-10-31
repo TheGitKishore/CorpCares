@@ -1,7 +1,4 @@
-import bcrypt from 'bcrypt';
-
 export class Password {
-
   #hash;
 
   constructor(rawPassword) {
@@ -15,12 +12,12 @@ export class Password {
       throw new TypeError("rawPassword must be a string");
     }
     const saltRounds = 10;
-    return bcrypt.hashSync(rawPassword, saltRounds)
+    return bcrypt.hashSync(rawPassword, saltRounds);
   }
 
   verify(inputPassword) {
     if (inputPassword == null) {
-        throw new TypeError("Input Password cannot be null or undefined");
+      throw new TypeError("Input Password cannot be null or undefined");
     }
     if (typeof inputPassword !== 'string') {
       throw new TypeError("inputPassword must be a string");
@@ -28,8 +25,13 @@ export class Password {
     return bcrypt.compareSync(inputPassword, this.#hash);
   }
 
-  get hash(){
+  get hash() {
     return this.#hash;
   }
 
+  static fromHash(storedHash) {
+    const instance = Object.create(Password.prototype);
+    instance.#hash = storedHash;
+    return instance;
+  }
 }
