@@ -14,6 +14,7 @@ export class UserAccountCreationController {
    */
   async createUserAccount(username, rawPassword, profile, email, name) {
     try {
+      //17-27 go to B
       // ─── Validate required fields ─────────────────────────────
       if (!username || !email || !rawPassword || !profile) {
         throw new Error("Missing required fields.");
@@ -27,12 +28,14 @@ export class UserAccountCreationController {
         throw new TypeError("Password cannot be null or undefined.");
       }
 
+      //entity 
       // ─── Check for duplicate username ────────────────────────
       const exists = await UserAccount.existsByUsername(username);
       if (exists) {
         throw new Error(`Username '${username}' is already taken.`);
       }
 
+      //entity
       // ─── Construct entity ────────────────────────────────────
       const passwordHash = new Password(String(rawPassword));
       this.#userAccount = new UserAccount(username, name, passwordHash, email, profile);
