@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Completed Requests</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+      color: #000;
+    }
+
+    form {
+      border: 1px solid #000;
+      padding: 25px;
+      width: 350px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background-color: #fff;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    input, select, button {
+      padding: 8px;
+      border: 1px solid #000;
+      background-color: #fff;
+      color: #000;
+    }
+
+    button {
+      background-color: #000;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+
+    #results {
+      margin-top: 25px;
+      width: 90%;
+      max-width: 700px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      border: 1px solid #000;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Search Completed PIN Requests</h2>
+
+  <form id="searchForm">
+    <label for="serviceType">Type of Service</label>
+    <select id="serviceType">
+      <option value="">-- Select Type --</option>
+      <option value="community">Community Service</option>
+      <option value="education">Education</option>
+      <option value="environment">Environment</option>
+      <option value="health">Health</option>
+      <option value="other">Other</option>
+    </select>
+
+    <label for="startDate">Start Date</label>
+    <input type="date" id="startDate" />
+
+    <label for="endDate">End Date</label>
+    <input type="date" id="endDate" />
+
+    <button type="submit">Search</button>
+  </form>
+
+  <div id="results">
+    <h3>Search Results</h3>
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th>Request ID</th>
+          <th>Title</th>
+          <th>Type of Service</th>
+          <th>Completion Date</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody">
+        <tr><td colspan="4" style="text-align:center;">No results yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { CSRCompletedRequestController } from '../controller/CSRCompletedRequestController.js';
+
+    const form = document.getElementById('searchForm');
+    const resultsBody = document.getElementById('resultsBody');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const serviceType = document.getElementById('serviceType').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      const controller = new CSRCompletedRequestController();
+
+      try {
+        const results = await controller.searchCompletedRequests(serviceType, startDate, endDate);
+        renderResults(results);
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    function renderResults(requests) {
+      resultsBody.innerHTML = '';
+
+      if (!requests || requests.length === 0) {
+        resultsBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No results found</td></tr>`;
+        return;
+      }
+
+      for (const r of requests) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${r.id}</td>
+          <td>${r.title}</td>
+          <td>${r.serviceType}</td>
+          <td>${r.completionDate}</td>
+        `;
+        resultsBody.appendChild(row);
+      }
+    }
+  </script>
+
+</body>
+</html>

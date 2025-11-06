@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Volunteer Service Category</title>
+  <style>
+    body { background-color: #fff; font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    form { border: 1px solid #000; padding: 30px; width: 300px; display: flex; flex-direction: column; gap: 15px; }
+    label { font-weight: bold; }
+    input, textarea { padding: 8px; border: 1px solid #000; }
+    button { padding: 10px; background: #000; color: #fff; cursor: pointer; }
+    button:hover { background: #333; }
+  </style>
+</head>
+<body>
+  <form id="createCategoryForm">
+    <h3>Create New Category</h3>
+    <label for="categoryName">Category Name</label>
+    <input type="text" id="categoryName" required />
+
+    <label for="categoryDesc">Description</label>
+    <textarea id="categoryDesc" required></textarea>
+
+    <button type="submit">Create Category</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('createCategoryForm');
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = document.getElementById('categoryName').value.trim();
+      const description = document.getElementById('categoryDesc').value.trim();
+
+      try {
+        const res = await fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description })
+        });
+        const data = await res.json();
+        if (res.ok) alert(`Category created: ${data.name}`);
+        else alert(`Error: ${data.error}`);
+        form.reset();
+      } catch (err) { alert(`Network error: ${err.message}`); }
+    });
+  </script>
+</body>
+</html>
