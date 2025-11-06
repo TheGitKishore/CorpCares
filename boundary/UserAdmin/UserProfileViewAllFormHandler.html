@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>View User Profiles</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    form {
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 30px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+
+    #results {
+      margin-top: 20px;
+      width: 100%;
+      font-size: 14px;
+      color: #000;
+    }
+
+    .account {
+      border-top: 1px solid #000;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <form id="viewForm">
+    <button type="submit">View All User Profiles</button>
+    <div id="results"></div>
+  </form>
+
+  <script type="module">
+    import { UserProfileViewController } from '../controller/UserProfileViewController.js';
+
+    const form = document.getElementById('viewForm');
+    const resultsDiv = document.getElementById('results');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const controller = new UserProfileViewController();
+
+      try {
+        const profiles = await controller.viewUserProfiles();
+
+        if (Array.isArray(profiles) && profiles.length > 0) {
+          resultsDiv.innerHTML = profiles.map(profiles => `
+            <div class="profiles">
+              <strong>Profile Name:</strong> ${profiles.profilesNames}<br/>
+              <strong>Description:</strong> ${profiles.descriptiom}<br/>
+              <strong>Active:</strong> ${profiles.isActive}
+            </div>
+          `).join('');
+        } else {
+          resultsDiv.innerHTML = '<p>No user profiles found.</p>';
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
