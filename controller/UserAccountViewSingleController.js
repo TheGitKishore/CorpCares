@@ -8,7 +8,7 @@ export class UserAccountViewSingleController {
   /**
    * Fetches a single user account from the database.
    */
-  async viewUserAccountById(userId) {
+  async viewSingleUserAccount(userId) {
     try {
       const account = await UserAccount.findById(userId);
       if (!(account instanceof UserAccount)) {

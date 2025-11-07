@@ -1,5 +1,6 @@
 import { UserAccount } from '../entities/UserAccount.js';
 import { Password } from '../entities/Password.js';
+import { UserProfile } from '../entities/UserProfile.js';
 
 export class UserAccountCreationController {
   #userAccount;
@@ -8,8 +9,17 @@ export class UserAccountCreationController {
     this.#userAccount = null;
   }
 
-  async createUserAccount(username, rawPassword, profile, email, name) {
+  /**
+   * Creates a new UserAccount.
+   * Hydrates UserProfile dynamically by roleName.
+   */
+  async createUserAccount(username, rawPassword, roleName, email, name) {
     try {
+      const profile = await UserProfile.findByRoleName(roleName);
+      if (!profile) {
+        throw new Error(`UserProfile with roleName '${roleName}' not found.`);
+      }
+
       const passwordHash = new Password(String(rawPassword));
       this.#userAccount = new UserAccount(username, name, passwordHash, email, profile);
 

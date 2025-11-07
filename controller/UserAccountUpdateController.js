@@ -8,23 +8,26 @@ export class UserAccountUpdateController {
     this.#userAccount = userAccount;
   }
 
+  /**
+   * Hydrate controller with an existing UserAccount by ID.
+   */
   static async findById(userId) {
-    if (!userId || typeof userId !== 'number') {
-      throw new TypeError("Invalid or missing userId.");
-    }
-
     const userAccount = await UserAccount.findById(userId);
     if (!(userAccount instanceof UserAccount)) {
       throw new Error(`UserAccount with ID ${userId} not found.`);
     }
-
     return new UserAccountUpdateController(userAccount);
   }
 
-  async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
+  /**
+   * Update the hydrated UserAccount.
+   * Hydrates UserProfile dynamically by roleName.
+   */
+  async updateUserAccount(username, name, email, rawPassword, roleName, isActive) {
     try {
-      if (!username || !name || !email || !profile || rawPassword == null || typeof isActive !== 'boolean') {
-        throw new Error("Missing or invalid fields.");
+      const profile = await UserProfile.findByRoleName(roleName);
+      if (!profile) {
+        throw new Error(`UserProfile with roleName '${roleName}' not found.`);
       }
 
       const success = await this.#userAccount.updateUserAccount(
