@@ -29,7 +29,7 @@
       color: #000;
     }
 
-    input {
+    input, select {
       padding: 8px;
       border: 1px solid #000;
       background-color: #fff;
@@ -63,8 +63,14 @@
     <label for="password">Password</label>
     <input type="password" id="password" required />
 
-    <label for="roleId">Role ID</label>
-    <input type="number" id="roleId" required />
+    <label for="roleName">Role</label>
+    <select id="roleName" required>
+      <option value="">Select a role</option>
+      <option value="UserAdmin">User Admin</option>
+      <option value="PIN">PIN</option>
+      <option value="CSR Rep">CSR Rep</option>
+      <option value="Platform Manager">Platform Manager</option>
+    </select>
 
     <button type="submit">Create Account</button>
   </form>
@@ -82,9 +88,20 @@
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim();
       const rawPassword = document.getElementById('password').value;
-      const roleId = parseInt(document.getElementById('roleId').value, 10);
+      const roleName = document.getElementById('roleName').value;
 
-      const profile = new UserProfile(roleId);
+      // Basic input validation
+      if (!username || !name || !email || !rawPassword || !roleName) {
+        alert("All fields are required.");
+        return;
+      }
+
+      const profile = UserProfile.getByRoleName(roleName);
+      if (!profile) {
+        alert("Invalid role selected.");
+        return;
+      }
+
       const controller = new UserAccountCreationController();
 
       try {

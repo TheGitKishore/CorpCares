@@ -1,84 +1,42 @@
-import { Pool } from 'pg';
-
 export class UserProfile {
-  static #pool = new Pool({
-    user: '',
-    host: '',
-    database: '',
-    password: '',
-    port: 1234
-  });
-
   #roleName;
   #description;
+  #permissions;
 
-  constructor(roleName, description) {
-    if (typeof roleName !== 'string') {
-      throw new TypeError("roleName must be a string");
-    }
-    if (typeof description !== 'string') {
-      throw new TypeError("description must be a string");
-    }
-
+  constructor(roleName, description, permissions = {}) {
     this.#roleName = roleName;
     this.#description = description;
+    this.#permissions = permissions;
   }
 
   get roleName() { return this.#roleName; }
-  set roleName(value) {
-    if (typeof value !== 'string') {
-      throw new TypeError("roleName must be a string");
-    }
-    this.#roleName = value;
-  }
-
   get description() { return this.#description; }
-  set description(value) {
-    if (typeof value !== 'string') {
-      throw new TypeError("description must be a string");
-    }
-    this.#description = value;
+  get permissions() { return this.#permissions; }
+
+  static #profiles = [
+    new UserProfile("UserAdmin", "User administrator", {
+      canExample1: true,
+      canExample2: false
+    }),
+    new UserProfile("PIN", "Person-In-Need", {
+      canExample1: false,
+      canExample2: true
+    }),
+    new UserProfile("CSR Rep", "Corporate Social Responsibility Representative", {
+      canExample1: true,
+      canExample2: true
+    }),
+    new UserProfile("Platform Manager", "Platform manager", {
+      canExample1: false,
+      canExample2: false
+    })
+  ];
+
+  static getAllProfiles() {
+    return this.#profiles;
   }
 
-  static async getByRoleName(roleName) {
-    const client = await this.#pool.connect();
-    try {
-      const result = await client.query(
-        `SELECT roleName, description FROM UserProfile WHERE roleName = $1`,
-        [roleName]
-      );
-      if (result.rowCount === 0) return null;
-      const row = result.rows[0];
-      return new UserProfile(row.rolename, row.description);
-    } finally {
-      client.release();
-    }
-  }
-
-  static async getAllProfiles() {
-    const client = await this.#pool.connect();
-    try {
-      const result = await client.query(`SELECT roleName, description FROM UserProfile`);
-      return result.rows.map(row =>
-        new UserProfile(row.rolename, row.description)
-      );
-    } finally {
-      client.release();
-    }
-  }
-
-  async createUserProfile() {
-    const client = await UserProfile.#pool.connect();
-    try {
-      const result = await client.query(
-        `INSERT INTO UserProfile (roleName, description)
-         VALUES ($1, $2)
-         RETURNING roleName`,
-        [this.#roleName, this.#description]
-      );
-      return result.rows[0].rolename;
-    } finally {
-      client.release();
-    }
+  static getByRoleName(roleName) {
+    return this.#profiles.find(p => p.roleName === roleName) || null;
   }
 }

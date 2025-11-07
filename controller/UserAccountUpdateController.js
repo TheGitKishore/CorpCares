@@ -1,3 +1,6 @@
+import { UserAccount } from '../entities/UserAccount.js';
+import { UserProfile } from '../entities/UserProfile.js';
+
 export class UserAccountUpdateController {
   #userAccount;
 
@@ -20,20 +23,8 @@ export class UserAccountUpdateController {
 
   async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
     try {
-      if (!username || !name || !email || !profile) {
-        throw new Error("Missing required fields.");
-      }
-
-      if (!(profile instanceof UserProfile)) {
-        throw new TypeError("Expected profile to be an instance of UserProfile.");
-      }
-
-      if (rawPassword == null) {
-        throw new TypeError("Password cannot be null or undefined.");
-      }
-
-      if (typeof isActive !== 'boolean') {
-        throw new TypeError("isActive must be a boolean.");
+      if (!username || !name || !email || !profile || rawPassword == null || typeof isActive !== 'boolean') {
+        throw new Error("Missing or invalid fields.");
       }
 
       const success = await this.#userAccount.updateUserAccount(
@@ -51,7 +42,3 @@ export class UserAccountUpdateController {
     }
   }
 }
-
-// Example boundary usage
-// const controller = await UserAccountUpdateController.findById(userId);
-// await controller.updateUserAccount(username, name, email, rawPassword, profile, isActive);

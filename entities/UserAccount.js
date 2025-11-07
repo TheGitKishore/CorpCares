@@ -94,14 +94,21 @@ export class UserAccount {
   async createUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
+      // ─── Check for duplicate username ─────────────────────────────
+      const exists = await UserAccount.existsByUsername(this.#username);
+      if (exists) {
+        throw new Error(`Username '${this.#username}' is already taken.`);
+      }
+
+      // ─── Insert new user account ─────────────────────────────────
       const result = await client.query(
         `INSERT INTO UserAccount (username, password, userProfile, email, name, dateCreated, isActive)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING userID`,
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING userID`,
         [
           this.#username,
           this.#passwordHash.hash,
-          this.#profile.name,
+          this.#profile.roleName,
           this.#email,
           this.#name,
           this.#dateCreated.toISOString(),
@@ -114,6 +121,7 @@ export class UserAccount {
       client.release();
     }
   }
+
 
   // View All Accounts Logic (DB) --> Fed by UserAccountViewController
   static async viewUserAccounts() {
@@ -166,41 +174,18 @@ export class UserAccount {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        `SELECT 
-           ua.userID,
-           ua.username,
-           ua.name,
-           ua.password,
-           ua.email,
-           ua.dateCreated,
-           ua.isActive,
-           up.roleName,
-           up.description
-         FROM UserAccount ua
-         JOIN UserProfile up ON ua.userProfile = up.roleName
-         WHERE ua.userID = $1`,
+        `SELECT * FROM UserAccount WHERE userID = $1`,
         [userId]
       );
-
       if (result.rowCount === 0) return null;
-
       const row = result.rows[0];
 
       const password = new Password();
-      Object.defineProperty(password, 'hash', {
-        value: row.password,
-        writable: false
-      });
+      Object.defineProperty(password, 'hash', { value: row.password, writable: false });
 
-      const profile = new UserProfile(row.rolename, row.description);
+      const profile = UserProfile.getByRoleName(row.userprofile);
 
-      const account = new UserAccount(
-        row.username,
-        row.name,
-        password,
-        row.email,
-        profile
-      );
+      const account = new UserAccount(row.username, row.name, password, row.email, profile);
       account.#id = row.userid;
       account.dateCreated = new Date(row.datecreated);
       account.isActive = row.isactive;
@@ -211,60 +196,49 @@ export class UserAccount {
     }
   }
 
+
   // User Account Update Logic (DB) --> Fed by UserAccountUpdateController
   async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
-    this.#username = username;
-    this.#name = name;
-    this.#email = email;
-    this.#isActive = isActive;
+  this.#username = username;
+  this.#name = name;
+  this.#email = email;
+  this.#isActive = isActive;
 
-    const passwordHash = new Password(String(rawPassword));
-    Object.defineProperty(this.#passwordHash, 'hash', {
-      value: passwordHash.hash,
-      writable: false
-    });
+  const passwordHash = new Password(String(rawPassword));
+  Object.defineProperty(this.#passwordHash, 'hash', {
+    value: passwordHash.hash,
+    writable: false
+  });
 
-    this.#profile = profile;
+  this.#profile = profile;
 
-    const client = await UserAccount.#pool.connect();
-    try {
-      const result = await client.query(
-        `UPDATE UserAccount
-        SET username = $1,
-            name = $2,
-            email = $3,
-            password = $4,
-            userProfile = $5,
-            isActive = $6
-        WHERE userID = $7`,
-        [
-          this.#username,
-          this.#name,
-          this.#email,
-          this.#passwordHash.hash,
-          this.#profile.name,
-          this.#isActive,
-          this.#id
-        ]
-      );
-      return result.rowCount === 1;
-    } finally {
-      client.release();
-    }
+  const client = await UserAccount.#pool.connect();
+  try {
+    const result = await client.query(
+      `UPDATE UserAccount
+       SET username = $1,
+           name = $2,
+           email = $3,
+           password = $4,
+           userProfile = $5,
+           isActive = $6
+       WHERE userID = $7`,
+      [
+        this.#username,
+        this.#name,
+        this.#email,
+        this.#passwordHash.hash,
+        this.#profile.roleName,
+        this.#isActive,
+        this.#id
+      ]
+    );
+    return result.rowCount === 1;
+  } finally {
+    client.release();
   }
+}
 
-  async deleteUserAccount() {
-    const client = await UserAccount.#pool.connect();
-    try {
-      const result = await client.query(
-        `DELETE FROM UserAccount WHERE userID = $1`,
-        [this.#id]
-      );
-      return result.rowCount === 1;
-    } finally {
-      client.release();
-    }
-  }
 
   // Utility
   toString() {
