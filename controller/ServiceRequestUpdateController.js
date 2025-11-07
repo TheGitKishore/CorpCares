@@ -1,4 +1,5 @@
 import { ServiceRequest } from '../entities/ServiceRequest.js';
+import { ServiceCategory } from '../entities/ServiceCategory.js';
 
 export class ServiceRequestUpdateController {
   #serviceRequest;
@@ -15,8 +16,12 @@ export class ServiceRequestUpdateController {
     return new ServiceRequestUpdateController(request);
   }
 
-  async updateServiceRequest(title, description, category) {
+  async updateServiceRequest(title, description, categoryTitle) {
     try {
+      const category = await ServiceCategory.getServiceCategoryByTitle(categoryTitle);
+      if (!(category instanceof ServiceCategory)) {
+        throw new Error(`Category with title "${categoryTitle}" not found.`);
+      }
       const success = await this.#serviceRequest.updateServiceRequest(title, description, category);
       return success;
     } catch (error) {

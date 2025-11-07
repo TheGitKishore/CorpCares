@@ -1,3 +1,5 @@
+// ServiceRequest.js
+
 import { Pool } from 'pg';
 import { ServiceCategory } from './ServiceCategory.js';
 import { UserAccount } from './UserAccount.js';
@@ -66,14 +68,14 @@ export class ServiceRequest {
     const client = await ServiceRequest.#pool.connect();
     try {
       const result = await client.query(
-        `INSERT INTO ServiceRequest (title, description, categoryId, ownerId, datePosted)
+        `INSERT INTO ServiceRequest (title, description, categoryTitle, ownerId, datePosted)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id`,
         [
           this.#title,
           this.#description,
-          this.#category.id,   // use getter
-          this.#owner.id,      // use getter
+          this.#category.title,   // use category title as FK
+          this.#owner.id,
           this.#datePosted.toISOString()
         ]
       );
@@ -94,9 +96,9 @@ export class ServiceRequest {
     try {
       const result = await client.query(
         `UPDATE ServiceRequest
-         SET title = $1, description = $2, categoryId = $3
+         SET title = $1, description = $2, categoryTitle = $3
          WHERE id = $4`,
-        [this.#title, this.#description, this.#category.id, this.#id]
+        [this.#title, this.#description, this.#category.title, this.#id]
       );
       return result.rowCount === 1;
     } finally {
@@ -119,36 +121,34 @@ export class ServiceRequest {
   }
 
   // ─── View All ─────────────────────────────────────────────
-  static async viewAllServiceRequest() {
+  static async viewAllServiceRequests() {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        `SELECT id, title, description, categoryId, ownerId, datePosted
+        `SELECT id, title, description, categoryTitle, ownerId, datePosted
          FROM ServiceRequest`
       );
 
-      return result.rows.map(row => {
-        const category = ServiceCategory.getById(row.categoryid);
-        // hydrate owner with only id for now
-        const owner = new UserAccount(row.username, row.name, null, row.email, null);
-        owner.id = row.ownerid; // use setter/getter, not private field
+      return await Promise.all(result.rows.map(async row => {
+        const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
+        const owner = await UserAccount.findById(row.ownerid);
 
         const request = new ServiceRequest(row.title, row.description, category, owner);
         request.#id = row.id;
         request.#datePosted = new Date(row.dateposted);
         return request;
-      });
+      }));
     } finally {
       client.release();
     }
   }
 
-  // ─── View Single ──────────────────────────────────────────
+  // ─── View Single By Id ────────────────────────────────────
   static async findById(id) {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        `SELECT id, title, description, categoryId, ownerId, datePosted
+        `SELECT id, title, description, categoryTitle, ownerId, datePosted
          FROM ServiceRequest WHERE id = $1`,
         [id]
       );
@@ -156,9 +156,33 @@ export class ServiceRequest {
       if (result.rowCount === 0) return null;
       const row = result.rows[0];
 
-      const category = ServiceCategory.getById(row.categoryid);
-      const owner = new UserAccount(row.username, row.name, null, row.email, null);
-      owner.id = row.ownerid; // again, use setter/getter
+      const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
+      const owner = await UserAccount.findById(row.ownerid);
+
+      const request = new ServiceRequest(row.title, row.description, category, owner);
+      request.#id = row.id;
+      request.#datePosted = new Date(row.dateposted);
+      return request;
+    } finally {
+      client.release();
+    }
+  }
+
+  // ─── View Single By Title ─────────────────────────────────
+  static async findByTitle(title) {
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT id, title, description, categoryTitle, ownerId, datePosted
+         FROM ServiceRequest WHERE title = $1`,
+        [title]
+      );
+
+      if (result.rowCount === 0) return null;
+      const row = result.rows[0];
+
+      const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
+      const owner = await UserAccount.findById(row.ownerid);
 
       const request = new ServiceRequest(row.title, row.description, category, owner);
       request.#id = row.id;
