@@ -40,7 +40,7 @@ export class UserAccount {
   get isActive() { return this.#isActive; }
   get passwordHash() { return this.#passwordHash.hash; }
 
-  // ═══════════════════════════════════ Create ═══════════════════════════════════════════════════════════════════
+  // ═══════════════════════ Create ═══════════════════════
   async createUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
@@ -65,7 +65,14 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════════════════════════ Update (with optional password) ═══════════════════════════════════════════
+  // ═══════════════════════ Update (with optional password) ═══════════════════════
+  /**
+   * Update user account information
+   * Password parameter is optional - pass null or undefined to keep existing password
+   * Pass empty string to skip password update
+   * Pass valid string to update password
+   * Returns: { passwordUpdated: boolean, accountUpdated: boolean }
+   */
   async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
     this.#username = username;
     this.#name = name;
@@ -73,10 +80,13 @@ export class UserAccount {
     this.#isActive = isActive;
     this.#profile = profile;
 
-    // Only update password if provided and valid
+    let passwordUpdated = false;
+
+    // Only update password if a valid non-empty string is provided
     if (rawPassword !== null && rawPassword !== undefined && 
         typeof rawPassword === 'string' && rawPassword.trim().length > 0) {
       this.#passwordHash = new Password(rawPassword.trim());
+      passwordUpdated = true;
     }
 
     const client = await UserAccount.#pool.connect();
@@ -95,102 +105,81 @@ export class UserAccount {
           this.#id
         ]
       );
-      return result.rowCount === 1;
+      
+      const accountUpdated = result.rowCount === 1;
+      
+      return {
+        passwordUpdated: passwordUpdated,
+        accountUpdated: accountUpdated
+      };
     } finally {
       client.release();
     }
   }
 
-  // ═══════════════════════════════════ Delete (with cascade cleanup) ═══════════════════════════════════════════
+  // ═══════════════════════ Delete (with cascade cleanup) ═══════════════════════
+  /**
+   * Delete user account with cascade cleanup of all related data
+   * Deletion order is important to maintain referential integrity:
+   * 1. Sessions (references userId)
+   * 2. CSRSavedRequestItem (references savedListId)
+   * 3. CSRSavedRequest (references csrId)
+   * 4. CSRShortlistItem (references shortlistId)
+   * 5. CSRShortlist (references csrId)
+   * 6. ServiceRequest (references ownerId)
+   * 7. UserAccount (main entity)
+   */
   async deleteUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
       await client.query('BEGIN');
 
-      // Cascade delete sessions
+      // 1. Delete all sessions for this user
       await client.query(
         `DELETE FROM Session WHERE userId = $1`,
         [this.#id]
       );
 
-      // Cascade delete saved requests lists
+      // 2. Delete saved request items (child records first)
       await client.query(
         `DELETE FROM CSRSavedRequestItem WHERE savedListId IN 
          (SELECT id FROM CSRSavedRequest WHERE csrId = $1)`,
         [this.#id]
       );
+
+      // 3. Delete saved request lists
       await client.query(
         `DELETE FROM CSRSavedRequest WHERE csrId = $1`,
         [this.#id]
       );
 
-      // Cascade delete shortlists
+      // 4. Delete shortlist items (child records first)
       await client.query(
         `DELETE FROM CSRShortlistItem WHERE shortlistId IN 
          (SELECT id FROM CSRShortlist WHERE csrId = $1)`,
         [this.#id]
       );
+
+      // 5. Delete shortlists
       await client.query(
         `DELETE FROM CSRShortlist WHERE csrId = $1`,
         [this.#id]
       );
 
-      // Delete service requests owned by this user
+      // 6. Delete service requests owned by this user
       await client.query(
         `DELETE FROM ServiceRequest WHERE ownerId = $1`,
         [this.#id]
       );
 
-      // Finally, delete the user account
-      await client.query('BEGIN');
-
-      // Cascade delete sessions
-      await client.query(
-        `DELETE FROM Session WHERE userId = $1`,
-        [this.#id]
-      );
-
-      // Cascade delete saved requests lists
-      await client.query(
-        `DELETE FROM CSRSavedRequestItem WHERE savedListId IN 
-         (SELECT id FROM CSRSavedRequest WHERE csrId = $1)`,
-        [this.#id]
-      );
-      await client.query(
-        `DELETE FROM CSRSavedRequest WHERE csrId = $1`,
-        [this.#id]
-      );
-
-      // Cascade delete shortlists
-      await client.query(
-        `DELETE FROM CSRShortlistItem WHERE shortlistId IN 
-         (SELECT id FROM CSRShortlist WHERE csrId = $1)`,
-        [this.#id]
-      );
-      await client.query(
-        `DELETE FROM CSRShortlist WHERE csrId = $1`,
-        [this.#id]
-      );
-
-      // Delete service requests owned by this user
-      await client.query(
-        `DELETE FROM ServiceRequest WHERE ownerId = $1`,
-        [this.#id]
-      );
-
-      // Finally, delete the user account
+      // 7. Finally, delete the user account
       const result = await client.query(
         `DELETE FROM UserAccount WHERE userID = $1`,
         [this.#id]
       );
 
       await client.query('COMMIT');
-
-      await client.query('COMMIT');
       return result.rowCount === 1;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -199,7 +188,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════════════════════════ View All ════════════════════════════════════════════════════════════════
+  // ═══════════════════════ View All ═══════════════════════
   static async viewUserAccounts() {
     const client = await this.#pool.connect();
     try {
@@ -223,7 +212,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════════════════════════ View Single By ID ══════════════════════════════════════════════════════
+  // ═══════════════════════ View Single By ID ═══════════════════════
   static async findById(userId) {
     const client = await this.#pool.connect();
     try {
@@ -250,7 +239,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════════════════════════ Find By Username ══════════════════════════════════════════════════════
+  // ═══════════════════════ Find By Username ═══════════════════════
   static async findByUsername(username) {
     const client = await this.#pool.connect();
     try {
@@ -277,7 +266,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════════════════════════ Exists by ID ═══════════════════════════════════════════════════════════
+  // ═══════════════════════ Exists by ID ═══════════════════════
   static async existsById(userId) {
     const client = await this.#pool.connect();
     try {
@@ -291,7 +280,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════════════════════════ Exists by Username ════════════════════════════════════════════════════
+  // ═══════════════════════ Exists by Username ═══════════════════════
   static async existsByUsername(username) {
     const client = await this.#pool.connect();
     try {
@@ -305,7 +294,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════════════════════════ Verify Password ═══════════════════════════════════════════════════════
+  // ═══════════════════════ Verify Password ═══════════════════════
   /**
    * Verify a raw password against this user account's stored hash
    * Returns: boolean indicating if password is correct

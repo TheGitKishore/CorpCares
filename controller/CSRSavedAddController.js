@@ -12,6 +12,23 @@ export class CSRSavedAddController {
    */
   async addToSaved(sessionToken, serviceRequestId) {
     try {
+      // Input validation
+      if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.trim().length === 0) {
+        return { 
+          success: false, 
+          itemId: null, 
+          message: "Valid session token is required" 
+        };
+      }
+
+      if (!serviceRequestId || typeof serviceRequestId !== 'number' || serviceRequestId <= 0) {
+        return { 
+          success: false, 
+          itemId: null, 
+          message: "Valid service request ID is required" 
+        };
+      }
+
       // Check authorization - must have SAVE_REQUEST permission
       const auth = await AuthorizationHelper.checkPermission(sessionToken, Permissions.SAVE_REQUEST);
       

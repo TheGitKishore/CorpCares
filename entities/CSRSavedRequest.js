@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { UserAccount } from './UserAccount.js';
 import { ServiceRequest } from './ServiceRequest.js';
+import { RoleNames } from '../constants/RoleNames.js';
 
 export class CSRSavedRequest {
   static #pool = new Pool({
@@ -24,7 +25,7 @@ export class CSRSavedRequest {
       throw new Error("CSR owner must have a valid ID");
     }
     // Validate CSR role
-    if (csrOwner.profile.roleName !== 'CSR Rep') {
+    if (csrOwner.profile.roleName !== RoleNames.CSR_REP) {
       throw new Error("Owner must have 'CSR Rep' role to create saved list");
     }
     this.#csrOwner = csrOwner;
@@ -37,7 +38,6 @@ export class CSRSavedRequest {
   get serviceRequests() { return this.#serviceRequests; }
   get dateCreated() { return this.#dateCreated; }
 
-  // ═══════════════════════════════════ Create Saved List ═════════════════════════════════════════════════════
   async createSavedList() {
     const client = await CSRSavedRequest.#pool.connect();
     try {
@@ -53,7 +53,6 @@ export class CSRSavedRequest {
     }
   }
 
-  // ═══════════════════════════════════ Add ServiceRequest to Saved List ═════════════════════════════════════
   async addServiceRequest(serviceRequest) {
     if (!(serviceRequest instanceof ServiceRequest)) {
       throw new TypeError("Expected serviceRequest to be ServiceRequest");
@@ -84,7 +83,6 @@ export class CSRSavedRequest {
     }
   }
 
-  // ═══════════════════════════════════ Load ServiceRequests ══════════════════════════════════════════════════
   async loadServiceRequests() {
     const client = await CSRSavedRequest.#pool.connect();
     try {
@@ -106,7 +104,6 @@ export class CSRSavedRequest {
     }
   }
 
-  // ═══════════════════════════════════ Remove Item from Saved List ══════════════════════════════════════════
   static async removeItemById(itemId) {
     const client = await this.#pool.connect();
     try {
@@ -120,7 +117,6 @@ export class CSRSavedRequest {
     }
   }
 
-  // ═══════════════════════════════════ Static: Load Saved List By CSR ═══════════════════════════════════════
   static async getByCSR(csrId) {
     const client = await this.#pool.connect();
     try {
@@ -138,7 +134,7 @@ export class CSRSavedRequest {
       }
       
       // Validate CSR role
-      if (csrOwner.profile.roleName !== 'CSR Rep') {
+      if (csrOwner.profile.roleName !== RoleNames.CSR_REP) {
         throw new Error(`User ${csrOwner.id} is not a CSR Rep`);
       }
       

@@ -34,7 +34,7 @@ export class ServiceRequestDeleteController {
       const auth = await AuthorizationHelper.verifyOwnershipOrPermission(
         sessionToken, 
         this.#serviceRequest.owner.id,
-        Permissions.DELETE_ANY_REQUEST
+        Permissions.DELETE_OWN_REQUEST
       );
 
       if (!auth.authorized) {

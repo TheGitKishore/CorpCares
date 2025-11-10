@@ -1,4 +1,6 @@
 import { CSRSavedRequest } from '../entities/CSRSavedRequest.js';
+import { AuthorizationHelper } from '../helpers/AuthorizationHelper.js';
+import { Permissions } from '../constants/Permissions.js';
 
 export class CSRSearchSavedRequestsController {
   
@@ -8,6 +10,23 @@ export class CSRSearchSavedRequestsController {
    */
   async searchSaved(sessionToken, searchTerm) {
     try {
+      // Validate inputs
+      if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.trim().length === 0) {
+        return { 
+          success: false, 
+          results: null, 
+          message: "Valid session token is required" 
+        };
+      }
+
+      if (!searchTerm || typeof searchTerm !== 'string' || searchTerm.trim().length === 0) {
+        return { 
+          success: false, 
+          results: null, 
+          message: "Search term is required and must be a non-empty string" 
+        };
+      }
+
       // Check authorization - must have VIEW_SAVED_REQUESTS permission
       const auth = await AuthorizationHelper.checkPermission(
         sessionToken, 
@@ -20,14 +39,6 @@ export class CSRSearchSavedRequestsController {
 
       const csrUser = auth.userAccount;
 
-      if (!searchTerm || searchTerm.trim().length === 0) {
-        return { 
-          success: false, 
-          results: null, 
-          message: "Search term is required" 
-        };
-      }
-
       // Get saved list
       const savedList = await CSRSavedRequest.getByCSR(csrUser.id);
 
@@ -36,12 +47,12 @@ export class CSRSearchSavedRequestsController {
           success: true, 
           results: [],
           message: "No saved list found",
-          searchTerm: searchTerm
+          searchTerm: searchTerm.trim()
         };
       }
 
       // Filter saved requests by search term (case-insensitive)
-      const term = searchTerm.toLowerCase();
+      const term = searchTerm.trim().toLowerCase();
       const results = savedList.serviceRequests.filter(item => 
         item.title.toLowerCase().includes(term) || 
         item.description.toLowerCase().includes(term)
@@ -50,8 +61,8 @@ export class CSRSearchSavedRequestsController {
       return { 
         success: true, 
         results: results,
-        message: `Found ${results.length} saved requests matching "${searchTerm}"`,
-        searchTerm: searchTerm
+        message: `Found ${results.length} saved requests matching "${searchTerm.trim()}"`,
+        searchTerm: searchTerm.trim()
       };
 
     } catch (error) {

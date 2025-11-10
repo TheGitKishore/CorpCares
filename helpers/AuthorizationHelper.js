@@ -1,4 +1,5 @@
 import { Session } from '../entities/Session.js';
+import { RoleNames } from '../constants/RoleNames.js';
 
 export class AuthorizationHelper {
   
@@ -61,10 +62,6 @@ export class AuthorizationHelper {
     }
   }
 
-  /**
-   * Check if session has ANY of the allowed actions
-   * Returns: { authorized: boolean, userAccount: UserAccount | null, message: string }
-   */
   static async checkAnyPermission(sessionToken, allowedActions = []) {
     try {
       if (!sessionToken) {
@@ -117,10 +114,6 @@ export class AuthorizationHelper {
     }
   }
 
-  /**
-   * Check if session has ALL of the required actions
-   * Returns: { authorized: boolean, userAccount: UserAccount | null, message: string }
-   */
   static async checkAllPermissions(sessionToken, requiredActions = []) {
     try {
       if (!sessionToken) {
@@ -173,9 +166,6 @@ export class AuthorizationHelper {
     }
   }
 
-  /**
-   * Verify the session belongs to a specific user
-   */
   static async verifyOwnership(sessionToken, userId) {
     try {
       const session = await Session.findByToken(sessionToken);
@@ -207,9 +197,6 @@ export class AuthorizationHelper {
     }
   }
 
-  /**
-   * Verify ownership OR has permission (useful for PINs managing their own + CSRs managing any)
-   */
   static async verifyOwnershipOrPermission(sessionToken, userId, requiredAction) {
     try {
       const session = await Session.findByToken(sessionToken);

@@ -36,23 +36,7 @@ export class ServiceRequest {
       throw new Error("Description cannot exceed 2000 characters");
     }
 
-    // Validation
-    if (!title || title.trim().length === 0) {
-      throw new Error("Title cannot be empty");
-    }
-    if (title.length > 200) {
-      throw new Error("Title cannot exceed 200 characters");
-    }
-    if (!description || description.trim().length === 0) {
-      throw new Error("Description cannot be empty");
-    }
-    if (description.length > 2000) {
-      throw new Error("Description cannot exceed 2000 characters");
-    }
-
     this.#id = null;
-    this.#title = title.trim();
-    this.#description = description.trim();
     this.#title = title.trim();
     this.#description = description.trim();
 
@@ -89,26 +73,8 @@ export class ServiceRequest {
     }
     this.#title = value.trim(); 
   }
-  set title(value) { 
-    if (!value || value.trim().length === 0) {
-      throw new Error("Title cannot be empty");
-    }
-    if (value.length > 200) {
-      throw new Error("Title cannot exceed 200 characters");
-    }
-    this.#title = value.trim(); 
-  }
 
   get description() { return this.#description; }
-  set description(value) { 
-    if (!value || value.trim().length === 0) {
-      throw new Error("Description cannot be empty");
-    }
-    if (value.length > 2000) {
-      throw new Error("Description cannot exceed 2000 characters");
-    }
-    this.#description = value.trim(); 
-  }
   set description(value) { 
     if (!value || value.trim().length === 0) {
       throw new Error("Description cannot be empty");
@@ -146,7 +112,7 @@ export class ServiceRequest {
   get shortlistCount() { return this.#shortlistCount; }
   get saveCount() { return this.#saveCount; }
 
-  // ═══════════════════════════════════ Create ═════════════════════════════════════════════════════════════════
+  // ═══════════════════════ Create ═══════════════════════
   async createServiceRequest() {
     const client = await ServiceRequest.#pool.connect();
     try {
@@ -172,7 +138,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ Update ═════════════════════════════════════════════════════════════════
+  // ═══════════════════════ Update ═══════════════════════
   async updateServiceRequest(title, description, category) {
     this.title = title; // Uses setter with validation
     this.description = description; // Uses setter with validation
@@ -192,7 +158,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ Update Status ═════════════════════════════════════════════════════════
+  // ═══════════════════════ Update Status ═══════════════════════
   async updateStatus(newStatus) {
     const validStatuses = ["Pending", "Matched", "Complete"];
     if (!validStatuses.includes(newStatus)) {
@@ -213,7 +179,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ Increment Shortlist Count ═════════════════════════════════════════════
+  // ═══════════════════════ Increment Shortlist Count ═══════════════════════
   async incrementShortlistCount() {
     this.#shortlistCount += 1;
 
@@ -229,7 +195,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ Decrement Shortlist Count ═════════════════════════════════════════════
+  // ═══════════════════════ Decrement Shortlist Count ═══════════════════════
   async decrementShortlistCount() {
     if (this.#shortlistCount > 0) {
       this.#shortlistCount -= 1;
@@ -248,7 +214,7 @@ export class ServiceRequest {
     return false;
   }
 
-  // ═══════════════════════════════════ Increment Save Count ══════════════════════════════════════════════════
+  // ═══════════════════════ Increment Save Count ═══════════════════════
   async incrementSaveCount() {
     this.#saveCount += 1;
 
@@ -264,7 +230,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ Decrement Save Count ══════════════════════════════════════════════════
+  // ═══════════════════════ Decrement Save Count ═══════════════════════
   async decrementSaveCount() {
     if (this.#saveCount > 0) {
       this.#saveCount -= 1;
@@ -283,7 +249,7 @@ export class ServiceRequest {
     return false;
   }
 
-  // ═══════════════════════════════════ Delete ═════════════════════════════════════════════════════════════════
+  // ═══════════════════════ Delete ═══════════════════════
   async deleteServiceRequest() {
     const client = await ServiceRequest.#pool.connect();
     try {
@@ -297,7 +263,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ View All ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════ View All ═══════════════════════
   static async viewAllServiceRequests() {
     const client = await this.#pool.connect();
     try {
@@ -320,10 +286,6 @@ export class ServiceRequest {
         request.#description = row.description;
         request.#category = category;
         request.#owner = owner;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
         request.#datePosted = new Date(row.dateposted);
         request.#status = row.status;
         request.#shortlistCount = row.shortlistcount;
@@ -335,7 +297,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ View Single By Id ═════════════════════════════════════════════════════
+  // ═══════════════════════ View Single By Id ═══════════════════════
   static async findById(id) {
     const client = await this.#pool.connect();
     try {
@@ -361,10 +323,6 @@ export class ServiceRequest {
       request.#description = row.description;
       request.#category = category;
       request.#owner = owner;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
       request.#datePosted = new Date(row.dateposted);
       request.#status = row.status;
       request.#shortlistCount = row.shortlistcount;
@@ -375,7 +333,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ View Single By Title ══════════════════════════════════════════════════
+  // ═══════════════════════ View Single By Title ═══════════════════════
   static async findByTitle(title) {
     const client = await this.#pool.connect();
     try {
@@ -401,10 +359,6 @@ export class ServiceRequest {
       request.#description = row.description;
       request.#category = category;
       request.#owner = owner;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
       request.#datePosted = new Date(row.dateposted);
       request.#status = row.status;
       request.#shortlistCount = row.shortlistcount;
@@ -415,7 +369,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════════════════════════ View By Owner (PIN) ═══════════════════════════════════════════════════
+  // ═══════════════════════ View By Owner (PIN) ═══════════════════════
   static async findByOwnerId(ownerId) {
     const client = await this.#pool.connect();
     try {
@@ -678,10 +632,6 @@ export class ServiceRequest {
         request.#description = row.description;
         request.#category = category;
         request.#owner = owner;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
         request.#datePosted = new Date(row.dateposted);
         request.#status = row.status;
         request.#shortlistCount = row.shortlistcount;
@@ -695,6 +645,7 @@ export class ServiceRequest {
 
   /**
    * Get daily statistics for reporting
+   * Returns raw numbers for further processing
    */
   static async getDailyStatistics(startDate, endDate) {
     const client = await this.#pool.connect();
@@ -743,6 +694,7 @@ export class ServiceRequest {
 
   /**
    * Get weekly statistics for reporting
+   * Returns raw numbers for further processing
    */
   static async getWeeklyStatistics(weekStart, weekEnd) {
     const client = await this.#pool.connect();
@@ -800,6 +752,7 @@ export class ServiceRequest {
 
   /**
    * Get monthly statistics for reporting
+   * Returns raw numbers for further processing
    */
   static async getMonthlyStatistics(monthStart, monthEnd) {
     const client = await this.#pool.connect();
@@ -834,11 +787,9 @@ export class ServiceRequest {
         category: row.categorytitle,
         totalRequests: parseInt(row.totalrequests),
         completedRequests: parseInt(row.completedrequests),
-        completionRate: row.totalrequests > 0 
-          ? ((row.completedrequests / row.totalrequests) * 100).toFixed(2) + '%'
-          : '0%',
-        avgShortlistCount: parseFloat(row.avgshortlistcount || 0).toFixed(2),
-        avgSaveCount: parseFloat(row.avgsavecount || 0).toFixed(2)
+        completionRate: parseFloat((row.completedrequests / row.totalrequests).toFixed(4)),
+        avgShortlistCount: parseFloat((row.avgshortlistcount || 0).toFixed(2)),
+        avgSaveCount: parseFloat((row.avgsavecount || 0).toFixed(2))
       }));
 
       const weeklyTrend = weeklyResult.rows.map(row => ({
@@ -854,8 +805,8 @@ export class ServiceRequest {
         totalRequests: totalRequests,
         totalCompleted: totalCompleted,
         overallCompletionRate: totalRequests > 0 
-          ? ((totalCompleted / totalRequests) * 100).toFixed(2) + '%'
-          : '0%',
+          ? parseFloat((totalCompleted / totalRequests).toFixed(4))
+          : 0,
         categoryBreakdown: categoryBreakdown,
         weeklyTrend: weeklyTrend
       };

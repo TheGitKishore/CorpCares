@@ -10,6 +10,15 @@ export class PlatformDailyReportController {
    */
   async generateDailyReport(sessionToken, reportDate = null) {
     try {
+      // Input validation
+      if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.trim().length === 0) {
+        return { 
+          success: false, 
+          report: null, 
+          message: "Valid session token is required" 
+        };
+      }
+
       // Check authorization - must have VIEW_STATISTICS permission
       const auth = await AuthorizationHelper.checkPermission(
         sessionToken, 
@@ -20,8 +29,21 @@ export class PlatformDailyReportController {
         return { success: false, report: null, message: auth.message };
       }
 
-      // Default to today if no date provided
-      const targetDate = reportDate ? new Date(reportDate) : new Date();
+      // Validate and parse date if provided
+      let targetDate;
+      if (reportDate !== null) {
+        targetDate = new Date(reportDate);
+        if (isNaN(targetDate.getTime())) {
+          return { 
+            success: false, 
+            report: null, 
+            message: "Invalid date format. Please provide a valid date." 
+          };
+        }
+      } else {
+        targetDate = new Date();
+      }
+
       targetDate.setHours(0, 0, 0, 0);
 
       const nextDay = new Date(targetDate);
