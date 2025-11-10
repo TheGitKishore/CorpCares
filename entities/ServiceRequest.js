@@ -43,10 +43,16 @@ export class ServiceRequest {
     if (!(category instanceof ServiceCategory)) {
       throw new TypeError("Expected category to be an instance of ServiceCategory");
     }
+    if (!category.id) {
+      throw new Error("ServiceCategory must have a valid ID");
+    }
     this.#category = category;
 
     if (!(owner instanceof UserAccount)) {
       throw new TypeError("Expected owner to be an instance of UserAccount");
+    }
+    if (!owner.id) {
+      throw new Error("UserAccount owner must have a valid ID");
     }
     this.#owner = owner;
 
@@ -84,6 +90,9 @@ export class ServiceRequest {
     if (!(value instanceof ServiceCategory)) {
       throw new TypeError("Expected category to be ServiceCategory");
     }
+    if (!value.id) {
+      throw new Error("ServiceCategory must have a valid ID");
+    }
     this.#category = value;
   }
 
@@ -91,6 +100,9 @@ export class ServiceRequest {
   set owner(value) {
     if (!(value instanceof UserAccount)) {
       throw new TypeError("Expected owner to be UserAccount");
+    }
+    if (!value.id) {
+      throw new Error("UserAccount owner must have a valid ID");
     }
     this.#owner = value;
   }
@@ -100,7 +112,7 @@ export class ServiceRequest {
   get shortlistCount() { return this.#shortlistCount; }
   get saveCount() { return this.#saveCount; }
 
-  // ═══════════════ Create ══════════════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Create ═════════════════════════════════════════════════════════════════
   async createServiceRequest() {
     const client = await ServiceRequest.#pool.connect();
     try {
@@ -126,11 +138,11 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ Update ══════════════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Update ═════════════════════════════════════════════════════════════════
   async updateServiceRequest(title, description, category) {
     this.title = title; // Uses setter with validation
     this.description = description; // Uses setter with validation
-    this.category = category; // setter enforces type
+    this.category = category; // setter enforces type and validates ID
 
     const client = await ServiceRequest.#pool.connect();
     try {
@@ -146,7 +158,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ Update Status ═══════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Update Status ═════════════════════════════════════════════════════════
   async updateStatus(newStatus) {
     const validStatuses = ["Pending", "Matched", "Complete"];
     if (!validStatuses.includes(newStatus)) {
@@ -167,7 +179,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ Increment Shortlist Count ═══════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Increment Shortlist Count ═════════════════════════════════════════════
   async incrementShortlistCount() {
     this.#shortlistCount += 1;
 
@@ -183,7 +195,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ Decrement Shortlist Count ═══════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Decrement Shortlist Count ═════════════════════════════════════════════
   async decrementShortlistCount() {
     if (this.#shortlistCount > 0) {
       this.#shortlistCount -= 1;
@@ -202,7 +214,7 @@ export class ServiceRequest {
     return false;
   }
 
-  // ═══════════════ Increment Save Count ════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Increment Save Count ══════════════════════════════════════════════════
   async incrementSaveCount() {
     this.#saveCount += 1;
 
@@ -218,7 +230,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ Decrement Save Count ════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Decrement Save Count ══════════════════════════════════════════════════
   async decrementSaveCount() {
     if (this.#saveCount > 0) {
       this.#saveCount -= 1;
@@ -237,7 +249,7 @@ export class ServiceRequest {
     return false;
   }
 
-  // ═══════════════ Delete ══════════════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Delete ═════════════════════════════════════════════════════════════════
   async deleteServiceRequest() {
     const client = await ServiceRequest.#pool.connect();
     try {
@@ -251,7 +263,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ View All ════════════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ View All ═══════════════════════════════════════════════════════════════
   static async viewAllServiceRequests() {
     const client = await this.#pool.connect();
     try {
@@ -263,6 +275,10 @@ export class ServiceRequest {
       return await Promise.all(result.rows.map(async row => {
         const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
         const owner = await UserAccount.findById(row.ownerid);
+
+        if (!category || !owner) {
+          throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+        }
 
         const request = Object.create(ServiceRequest.prototype);
         request.#id = row.id;
@@ -281,7 +297,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ View Single By Id ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ View Single By Id ═════════════════════════════════════════════════════
   static async findById(id) {
     const client = await this.#pool.connect();
     try {
@@ -297,6 +313,10 @@ export class ServiceRequest {
       const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
       const owner = await UserAccount.findById(row.ownerid);
 
+      if (!category || !owner) {
+        throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+      }
+
       const request = Object.create(ServiceRequest.prototype);
       request.#id = row.id;
       request.#title = row.title;
@@ -313,7 +333,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ View Single By Title ════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ View Single By Title ══════════════════════════════════════════════════
   static async findByTitle(title) {
     const client = await this.#pool.connect();
     try {
@@ -329,6 +349,10 @@ export class ServiceRequest {
       const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
       const owner = await UserAccount.findById(row.ownerid);
 
+      if (!category || !owner) {
+        throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+      }
+
       const request = Object.create(ServiceRequest.prototype);
       request.#id = row.id;
       request.#title = row.title;
@@ -345,7 +369,7 @@ export class ServiceRequest {
     }
   }
 
-  // ═══════════════ View By Owner (PIN) ═════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ View By Owner (PIN) ═══════════════════════════════════════════════════
   static async findByOwnerId(ownerId) {
     const client = await this.#pool.connect();
     try {
@@ -358,6 +382,10 @@ export class ServiceRequest {
       return await Promise.all(result.rows.map(async row => {
         const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
         const owner = await UserAccount.findById(row.ownerid);
+
+        if (!category || !owner) {
+          throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+        }
 
         const request = Object.create(ServiceRequest.prototype);
         request.#id = row.id;
@@ -377,403 +405,412 @@ export class ServiceRequest {
   }
 
   static async findCompletedByOwnerId(ownerId) {
-  const client = await this.#pool.connect();
-  try {
-    const result = await client.query(
-      `SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
-       FROM ServiceRequest 
-       WHERE ownerId = $1 AND status = 'Complete'
-       ORDER BY datePosted DESC`,
-      [ownerId]
-    );
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
+         FROM ServiceRequest 
+         WHERE ownerId = $1 AND status = 'Complete'
+         ORDER BY datePosted DESC`,
+        [ownerId]
+      );
 
-    return await Promise.all(result.rows.map(async row => {
-      const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
-      const owner = await UserAccount.findById(row.ownerid);
+      return await Promise.all(result.rows.map(async row => {
+        const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
+        const owner = await UserAccount.findById(row.ownerid);
 
-      const request = Object.create(ServiceRequest.prototype);
-      request.#id = row.id;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
-      request.#datePosted = new Date(row.dateposted);
-      request.#status = row.status;
-      request.#shortlistCount = row.shortlistcount;
-      request.#saveCount = row.savecount;
-      return request;
-    }));
-  } finally {
-    client.release();
-  }
-}
+        if (!category || !owner) {
+          throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+        }
 
-/**
- * Search completed requests by owner with optional filters
- * Returns completed requests matching category and/or date range
- */
-static async searchCompletedByOwner(ownerId, categoryTitle = null, startDate = null, endDate = null) {
-  const client = await this.#pool.connect();
-  try {
-    let query = `
-      SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
-      FROM ServiceRequest 
-      WHERE ownerId = $1 AND status = 'Complete'
-    `;
-    
-    const params = [ownerId];
-    let paramIndex = 2;
-
-    // Add category filter if provided
-    if (categoryTitle) {
-      query += ` AND categoryTitle = $${paramIndex}`;
-      params.push(categoryTitle);
-      paramIndex++;
+        const request = Object.create(ServiceRequest.prototype);
+        request.#id = row.id;
+        request.#title = row.title;
+        request.#description = row.description;
+        request.#category = category;
+        request.#owner = owner;
+        request.#datePosted = new Date(row.dateposted);
+        request.#status = row.status;
+        request.#shortlistCount = row.shortlistcount;
+        request.#saveCount = row.savecount;
+        return request;
+      }));
+    } finally {
+      client.release();
     }
-
-    // Add date range filters if provided
-    if (startDate) {
-      query += ` AND datePosted >= $${paramIndex}`;
-      params.push(new Date(startDate).toISOString());
-      paramIndex++;
-    }
-
-    if (endDate) {
-      query += ` AND datePosted <= $${paramIndex}`;
-      params.push(new Date(endDate).toISOString());
-      paramIndex++;
-    }
-
-    query += ` ORDER BY datePosted DESC`;
-
-    const result = await client.query(query, params);
-
-    return await Promise.all(result.rows.map(async row => {
-      const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
-      const owner = await UserAccount.findById(row.ownerid);
-
-      const request = Object.create(ServiceRequest.prototype);
-      request.#id = row.id;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
-      request.#datePosted = new Date(row.dateposted);
-      request.#status = row.status;
-      request.#shortlistCount = row.shortlistcount;
-      request.#saveCount = row.savecount;
-      return request;
-    }));
-  } finally {
-    client.release();
   }
-}
 
-/**
- * Search requests by category (excluding completed)
- * Returns requests with status "Pending" or "Matched"
- */
-static async searchByCategory(categoryTitle) {
-  const client = await this.#pool.connect();
-  try {
-    const result = await client.query(
-      `SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
-       FROM ServiceRequest 
-       WHERE categoryTitle = $1 AND status IN ('Pending', 'Matched')
-       ORDER BY datePosted DESC`,
-      [categoryTitle]
-    );
+  /**
+   * Search completed requests by owner with optional filters
+   * Returns completed requests matching category and/or date range
+   */
+  static async searchCompletedByOwner(ownerId, categoryTitle = null, startDate = null, endDate = null) {
+    const client = await this.#pool.connect();
+    try {
+      let query = `
+        SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
+        FROM ServiceRequest 
+        WHERE ownerId = $1 AND status = 'Complete'
+      `;
+      
+      const params = [ownerId];
+      let paramIndex = 2;
 
-    return await Promise.all(result.rows.map(async row => {
-      const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
-      const owner = await UserAccount.findById(row.ownerid);
-
-      const request = Object.create(ServiceRequest.prototype);
-      request.#id = row.id;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
-      request.#datePosted = new Date(row.dateposted);
-      request.#status = row.status;
-      request.#shortlistCount = row.shortlistcount;
-      request.#saveCount = row.savecount;
-      return request;
-    }));
-  } finally {
-    client.release();
-  }
-}
-
-/**
- * Find all completed service requests (system-wide)
- */
-static async findAllCompleted() {
-  const client = await this.#pool.connect();
-  try {
-    const result = await client.query(
-      `SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
-       FROM ServiceRequest 
-       WHERE status = 'Complete'
-       ORDER BY datePosted DESC`
-    );
-
-    return await Promise.all(result.rows.map(async row => {
-      const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
-      const owner = await UserAccount.findById(row.ownerid);
-
-      const request = Object.create(ServiceRequest.prototype);
-      request.#id = row.id;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
-      request.#datePosted = new Date(row.dateposted);
-      request.#status = row.status;
-      request.#shortlistCount = row.shortlistcount;
-      request.#saveCount = row.savecount;
-      return request;
-    }));
-  } finally {
-    client.release();
-  }
-}
-
-/**
- * Search completed requests with optional filters
- */
-static async searchCompleted(categoryTitle = null, startDate = null, endDate = null) {
-  const client = await this.#pool.connect();
-  try {
-    let query = `
-      SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
-      FROM ServiceRequest 
-      WHERE status = 'Complete'
-    `;
-    
-    const params = [];
-    let paramIndex = 1;
-
-    if (categoryTitle) {
-      query += ` AND categoryTitle = $${paramIndex}`;
-      params.push(categoryTitle);
-      paramIndex++;
-    }
-
-    if (startDate) {
-      query += ` AND datePosted >= $${paramIndex}`;
-      params.push(new Date(startDate).toISOString());
-      paramIndex++;
-    }
-
-    if (endDate) {
-      query += ` AND datePosted <= $${paramIndex}`;
-      params.push(new Date(endDate).toISOString());
-      paramIndex++;
-    }
-
-    query += ` ORDER BY datePosted DESC`;
-
-    const result = await client.query(query, params);
-
-    return await Promise.all(result.rows.map(async row => {
-      const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
-      const owner = await UserAccount.findById(row.ownerid);
-
-      const request = Object.create(ServiceRequest.prototype);
-      request.#id = row.id;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
-      request.#datePosted = new Date(row.dateposted);
-      request.#status = row.status;
-      request.#shortlistCount = row.shortlistcount;
-      request.#saveCount = row.savecount;
-      return request;
-    }));
-  } finally {
-    client.release();
-  }
-}
-
-/**
- * Get daily statistics for reporting
- */
-static async getDailyStatistics(startDate, endDate) {
-  const client = await this.#pool.connect();
-  try {
-    // Total requests created today
-    const createdResult = await client.query(
-      `SELECT COUNT(*) as count, categoryTitle
-       FROM ServiceRequest 
-       WHERE datePosted >= $1 AND datePosted < $2
-       GROUP BY categoryTitle`,
-      [startDate.toISOString(), endDate.toISOString()]
-    );
-
-    // Total requests completed today
-    const completedResult = await client.query(
-      `SELECT COUNT(*) as count, categoryTitle
-       FROM ServiceRequest 
-       WHERE status = 'Complete' AND datePosted >= $1 AND datePosted < $2
-       GROUP BY categoryTitle`,
-      [startDate.toISOString(), endDate.toISOString()]
-    );
-
-    // Category usage (all statuses)
-    const categoryUsage = createdResult.rows.map(row => ({
-      category: row.categorytitle,
-      requestsCreated: parseInt(row.count)
-    }));
-
-    const completedByCategory = completedResult.rows.reduce((acc, row) => {
-      acc[row.categorytitle] = parseInt(row.count);
-      return acc;
-    }, {});
-
-    // Total counts
-    const totalCreated = categoryUsage.reduce((sum, item) => sum + item.requestsCreated, 0);
-    const totalCompleted = Object.values(completedByCategory).reduce((sum, count) => sum + count, 0);
-
-    return {
-      totalRequestsCreated: totalCreated,
-      totalRequestsCompleted: totalCompleted,
-      categoryBreakdown: categoryUsage.map(item => ({
-        ...item,
-        requestsCompleted: completedByCategory[item.category] || 0
-      }))
-    };
-  } finally {
-    client.release();
-  }
-}
-
-/**
- * Get weekly statistics for reporting
- */
-static async getWeeklyStatistics(weekStart, weekEnd) {
-  const client = await this.#pool.connect();
-  try {
-    // Requests by status
-    const statusResult = await client.query(
-      `SELECT status, COUNT(*) as count
-       FROM ServiceRequest 
-       WHERE datePosted >= $1 AND datePosted < $2
-       GROUP BY status`,
-      [weekStart.toISOString(), weekEnd.toISOString()]
-    );
-
-    // Requests by category
-    const categoryResult = await client.query(
-      `SELECT categoryTitle, COUNT(*) as count, status
-       FROM ServiceRequest 
-       WHERE datePosted >= $1 AND datePosted < $2
-       GROUP BY categoryTitle, status
-       ORDER BY categoryTitle`,
-      [weekStart.toISOString(), weekEnd.toISOString()]
-    );
-
-    const statusCounts = statusResult.rows.reduce((acc, row) => {
-      acc[row.status] = parseInt(row.count);
-      return acc;
-    }, {});
-
-    // Organize by category
-    const categoryMap = {};
-    categoryResult.rows.forEach(row => {
-      if (!categoryMap[row.categorytitle]) {
-        categoryMap[row.categorytitle] = { pending: 0, matched: 0, complete: 0 };
+      if (categoryTitle) {
+        query += ` AND categoryTitle = $${paramIndex}`;
+        params.push(categoryTitle);
+        paramIndex++;
       }
-      const status = row.status.toLowerCase();
-      categoryMap[row.categorytitle][status] = parseInt(row.count);
-    });
 
-    const categoryBreakdown = Object.keys(categoryMap).map(cat => ({
-      category: cat,
-      pending: categoryMap[cat].pending,
-      matched: categoryMap[cat].matched,
-      completed: categoryMap[cat].complete,
-      total: categoryMap[cat].pending + categoryMap[cat].matched + categoryMap[cat].complete
-    }));
+      if (startDate) {
+        query += ` AND datePosted >= $${paramIndex}`;
+        params.push(new Date(startDate).toISOString());
+        paramIndex++;
+      }
 
-    return {
-      totalRequests: Object.values(statusCounts).reduce((sum, count) => sum + count, 0),
-      pendingRequests: statusCounts['Pending'] || 0,
-      matchedRequests: statusCounts['Matched'] || 0,
-      completedRequests: statusCounts['Complete'] || 0,
-      categoryBreakdown: categoryBreakdown
-    };
-  } finally {
-    client.release();
+      if (endDate) {
+        query += ` AND datePosted <= $${paramIndex}`;
+        params.push(new Date(endDate).toISOString());
+        paramIndex++;
+      }
+
+      query += ` ORDER BY datePosted DESC`;
+
+      const result = await client.query(query, params);
+
+      return await Promise.all(result.rows.map(async row => {
+        const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
+        const owner = await UserAccount.findById(row.ownerid);
+
+        if (!category || !owner) {
+          throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+        }
+
+        const request = Object.create(ServiceRequest.prototype);
+        request.#id = row.id;
+        request.#title = row.title;
+        request.#description = row.description;
+        request.#category = category;
+        request.#owner = owner;
+        request.#datePosted = new Date(row.dateposted);
+        request.#status = row.status;
+        request.#shortlistCount = row.shortlistcount;
+        request.#saveCount = row.savecount;
+        return request;
+      }));
+    } finally {
+      client.release();
+    }
   }
-}
 
-/**
- * Get monthly statistics for reporting
- */
-static async getMonthlyStatistics(monthStart, monthEnd) {
-  const client = await this.#pool.connect();
-  try {
-    // Overall engagement by category
-    const categoryResult = await client.query(
-      `SELECT 
-        categoryTitle,
-        COUNT(*) as totalRequests,
-        SUM(CASE WHEN status = 'Complete' THEN 1 ELSE 0 END) as completedRequests,
-        AVG(shortlistCount) as avgShortlistCount,
-        AVG(saveCount) as avgSaveCount
-       FROM ServiceRequest 
-       WHERE datePosted >= $1 AND datePosted < $2
-       GROUP BY categoryTitle
-       ORDER BY totalRequests DESC`,
-      [monthStart.toISOString(), monthEnd.toISOString()]
-    );
+  /**
+   * Search requests by category (excluding completed)
+   * Returns requests with status "Pending" or "Matched"
+   */
+  static async searchByCategory(categoryTitle) {
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
+         FROM ServiceRequest 
+         WHERE categoryTitle = $1 AND status IN ('Pending', 'Matched')
+         ORDER BY datePosted DESC`,
+        [categoryTitle]
+      );
 
-    // Weekly trend within the month
-    const weeklyResult = await client.query(
-      `SELECT 
-        DATE_TRUNC('week', datePosted) as week,
-        COUNT(*) as count,
-        SUM(CASE WHEN status = 'Complete' THEN 1 ELSE 0 END) as completed
-       FROM ServiceRequest 
-       WHERE datePosted >= $1 AND datePosted < $2
-       GROUP BY week
-       ORDER BY week`,
-      [monthStart.toISOString(), monthEnd.toISOString()]
-    );
+      return await Promise.all(result.rows.map(async row => {
+        const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
+        const owner = await UserAccount.findById(row.ownerid);
 
-    const categoryBreakdown = categoryResult.rows.map(row => ({
-      category: row.categorytitle,
-      totalRequests: parseInt(row.totalrequests),
-      completedRequests: parseInt(row.completedrequests),
-      completionRate: row.totalrequests > 0 
-        ? ((row.completedrequests / row.totalrequests) * 100).toFixed(2) + '%'
-        : '0%',
-      avgShortlistCount: parseFloat(row.avgshortlistcount || 0).toFixed(2),
-      avgSaveCount: parseFloat(row.avgsavecount || 0).toFixed(2)
-    }));
+        if (!category || !owner) {
+          throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+        }
 
-    const weeklyTrend = weeklyResult.rows.map(row => ({
-      week: new Date(row.week).toISOString().split('T')[0],
-      totalRequests: parseInt(row.count),
-      completedRequests: parseInt(row.completed)
-    }));
-
-    const totalRequests = categoryBreakdown.reduce((sum, item) => sum + item.totalRequests, 0);
-    const totalCompleted = categoryBreakdown.reduce((sum, item) => sum + item.completedRequests, 0);
-
-    return {
-      totalRequests: totalRequests,
-      totalCompleted: totalCompleted,
-      overallCompletionRate: totalRequests > 0 
-        ? ((totalCompleted / totalRequests) * 100).toFixed(2) + '%'
-        : '0%',
-      categoryBreakdown: categoryBreakdown,
-      weeklyTrend: weeklyTrend
-    };
-  } finally {
-    client.release();
+        const request = Object.create(ServiceRequest.prototype);
+        request.#id = row.id;
+        request.#title = row.title;
+        request.#description = row.description;
+        request.#category = category;
+        request.#owner = owner;
+        request.#datePosted = new Date(row.dateposted);
+        request.#status = row.status;
+        request.#shortlistCount = row.shortlistcount;
+        request.#saveCount = row.savecount;
+        return request;
+      }));
+    } finally {
+      client.release();
+    }
   }
-}
+
+  /**
+   * Find all completed service requests (system-wide)
+   */
+  static async findAllCompleted() {
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
+         FROM ServiceRequest 
+         WHERE status = 'Complete'
+         ORDER BY datePosted DESC`
+      );
+
+      return await Promise.all(result.rows.map(async row => {
+        const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
+        const owner = await UserAccount.findById(row.ownerid);
+
+        if (!category || !owner) {
+          throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+        }
+
+        const request = Object.create(ServiceRequest.prototype);
+        request.#id = row.id;
+        request.#title = row.title;
+        request.#description = row.description;
+        request.#category = category;
+        request.#owner = owner;
+        request.#datePosted = new Date(row.dateposted);
+        request.#status = row.status;
+        request.#shortlistCount = row.shortlistcount;
+        request.#saveCount = row.savecount;
+        return request;
+      }));
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Search completed requests with optional filters
+   */
+  static async searchCompleted(categoryTitle = null, startDate = null, endDate = null) {
+    const client = await this.#pool.connect();
+    try {
+      let query = `
+        SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
+        FROM ServiceRequest 
+        WHERE status = 'Complete'
+      `;
+      
+      const params = [];
+      let paramIndex = 1;
+
+      if (categoryTitle) {
+        query += ` AND categoryTitle = $${paramIndex}`;
+        params.push(categoryTitle);
+        paramIndex++;
+      }
+
+      if (startDate) {
+        query += ` AND datePosted >= $${paramIndex}`;
+        params.push(new Date(startDate).toISOString());
+        paramIndex++;
+      }
+
+      if (endDate) {
+        query += ` AND datePosted <= $${paramIndex}`;
+        params.push(new Date(endDate).toISOString());
+        paramIndex++;
+      }
+
+      query += ` ORDER BY datePosted DESC`;
+
+      const result = await client.query(query, params);
+
+      return await Promise.all(result.rows.map(async row => {
+        const category = await ServiceCategory.getServiceCategoryByTitle(row.categorytitle);
+        const owner = await UserAccount.findById(row.ownerid);
+
+        if (!category || !owner) {
+          throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
+        }
+
+        const request = Object.create(ServiceRequest.prototype);
+        request.#id = row.id;
+        request.#title = row.title;
+        request.#description = row.description;
+        request.#category = category;
+        request.#owner = owner;
+        request.#datePosted = new Date(row.dateposted);
+        request.#status = row.status;
+        request.#shortlistCount = row.shortlistcount;
+        request.#saveCount = row.savecount;
+        return request;
+      }));
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get daily statistics for reporting
+   */
+  static async getDailyStatistics(startDate, endDate) {
+    const client = await this.#pool.connect();
+    try {
+      const createdResult = await client.query(
+        `SELECT COUNT(*) as count, categoryTitle
+         FROM ServiceRequest 
+         WHERE datePosted >= $1 AND datePosted < $2
+         GROUP BY categoryTitle`,
+        [startDate.toISOString(), endDate.toISOString()]
+      );
+
+      const completedResult = await client.query(
+        `SELECT COUNT(*) as count, categoryTitle
+         FROM ServiceRequest 
+         WHERE status = 'Complete' AND datePosted >= $1 AND datePosted < $2
+         GROUP BY categoryTitle`,
+        [startDate.toISOString(), endDate.toISOString()]
+      );
+
+      const categoryUsage = createdResult.rows.map(row => ({
+        category: row.categorytitle,
+        requestsCreated: parseInt(row.count)
+      }));
+
+      const completedByCategory = completedResult.rows.reduce((acc, row) => {
+        acc[row.categorytitle] = parseInt(row.count);
+        return acc;
+      }, {});
+
+      const totalCreated = categoryUsage.reduce((sum, item) => sum + item.requestsCreated, 0);
+      const totalCompleted = Object.values(completedByCategory).reduce((sum, count) => sum + count, 0);
+
+      return {
+        totalRequestsCreated: totalCreated,
+        totalRequestsCompleted: totalCompleted,
+        categoryBreakdown: categoryUsage.map(item => ({
+          ...item,
+          requestsCompleted: completedByCategory[item.category] || 0
+        }))
+      };
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get weekly statistics for reporting
+   */
+  static async getWeeklyStatistics(weekStart, weekEnd) {
+    const client = await this.#pool.connect();
+    try {
+      const statusResult = await client.query(
+        `SELECT status, COUNT(*) as count
+         FROM ServiceRequest 
+         WHERE datePosted >= $1 AND datePosted < $2
+         GROUP BY status`,
+        [weekStart.toISOString(), weekEnd.toISOString()]
+      );
+
+      const categoryResult = await client.query(
+        `SELECT categoryTitle, COUNT(*) as count, status
+         FROM ServiceRequest 
+         WHERE datePosted >= $1 AND datePosted < $2
+         GROUP BY categoryTitle, status
+         ORDER BY categoryTitle`,
+        [weekStart.toISOString(), weekEnd.toISOString()]
+      );
+
+      const statusCounts = statusResult.rows.reduce((acc, row) => {
+        acc[row.status] = parseInt(row.count);
+        return acc;
+      }, {});
+
+      const categoryMap = {};
+      categoryResult.rows.forEach(row => {
+        if (!categoryMap[row.categorytitle]) {
+          categoryMap[row.categorytitle] = { pending: 0, matched: 0, complete: 0 };
+        }
+        const status = row.status.toLowerCase();
+        categoryMap[row.categorytitle][status] = parseInt(row.count);
+      });
+
+      const categoryBreakdown = Object.keys(categoryMap).map(cat => ({
+        category: cat,
+        pending: categoryMap[cat].pending,
+        matched: categoryMap[cat].matched,
+        completed: categoryMap[cat].complete,
+        total: categoryMap[cat].pending + categoryMap[cat].matched + categoryMap[cat].complete
+      }));
+
+      return {
+        totalRequests: Object.values(statusCounts).reduce((sum, count) => sum + count, 0),
+        pendingRequests: statusCounts['Pending'] || 0,
+        matchedRequests: statusCounts['Matched'] || 0,
+        completedRequests: statusCounts['Complete'] || 0,
+        categoryBreakdown: categoryBreakdown
+      };
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get monthly statistics for reporting
+   */
+  static async getMonthlyStatistics(monthStart, monthEnd) {
+    const client = await this.#pool.connect();
+    try {
+      const categoryResult = await client.query(
+        `SELECT 
+          categoryTitle,
+          COUNT(*) as totalRequests,
+          SUM(CASE WHEN status = 'Complete' THEN 1 ELSE 0 END) as completedRequests,
+          AVG(shortlistCount) as avgShortlistCount,
+          AVG(saveCount) as avgSaveCount
+         FROM ServiceRequest 
+         WHERE datePosted >= $1 AND datePosted < $2
+         GROUP BY categoryTitle
+         ORDER BY totalRequests DESC`,
+        [monthStart.toISOString(), monthEnd.toISOString()]
+      );
+
+      const weeklyResult = await client.query(
+        `SELECT 
+          DATE_TRUNC('week', datePosted) as week,
+          COUNT(*) as count,
+          SUM(CASE WHEN status = 'Complete' THEN 1 ELSE 0 END) as completed
+         FROM ServiceRequest 
+         WHERE datePosted >= $1 AND datePosted < $2
+         GROUP BY week
+         ORDER BY week`,
+        [monthStart.toISOString(), monthEnd.toISOString()]
+      );
+
+      const categoryBreakdown = categoryResult.rows.map(row => ({
+        category: row.categorytitle,
+        totalRequests: parseInt(row.totalrequests),
+        completedRequests: parseInt(row.completedrequests),
+        completionRate: row.totalrequests > 0 
+          ? ((row.completedrequests / row.totalrequests) * 100).toFixed(2) + '%'
+          : '0%',
+        avgShortlistCount: parseFloat(row.avgshortlistcount || 0).toFixed(2),
+        avgSaveCount: parseFloat(row.avgsavecount || 0).toFixed(2)
+      }));
+
+      const weeklyTrend = weeklyResult.rows.map(row => ({
+        week: new Date(row.week).toISOString().split('T')[0],
+        totalRequests: parseInt(row.count),
+        completedRequests: parseInt(row.completed)
+      }));
+
+      const totalRequests = categoryBreakdown.reduce((sum, item) => sum + item.totalRequests, 0);
+      const totalCompleted = categoryBreakdown.reduce((sum, item) => sum + item.completedRequests, 0);
+
+      return {
+        totalRequests: totalRequests,
+        totalCompleted: totalCompleted,
+        overallCompletionRate: totalRequests > 0 
+          ? ((totalCompleted / totalRequests) * 100).toFixed(2) + '%'
+          : '0%',
+        categoryBreakdown: categoryBreakdown,
+        weeklyTrend: weeklyTrend
+      };
+    } finally {
+      client.release();
+    }
+  }
 }

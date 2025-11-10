@@ -20,6 +20,13 @@ export class CSRShortlist {
     if (!(csrOwner instanceof UserAccount)) {
       throw new TypeError("Expected csrOwner to be UserAccount");
     }
+    if (!csrOwner.id) {
+      throw new Error("CSR owner must have a valid ID");
+    }
+    // Validate CSR role
+    if (csrOwner.profile.roleName !== 'CSR Rep') {
+      throw new Error("Owner must have 'CSR Rep' role to create shortlist");
+    }
     this.#csrOwner = csrOwner;
     this.#serviceRequests = [];
     this.#dateCreated = new Date();
@@ -30,7 +37,7 @@ export class CSRShortlist {
   get serviceRequests() { return this.#serviceRequests; }
   get dateCreated() { return this.#dateCreated; }
 
-  // ═══════════════ Create Shortlist ════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Create Shortlist ══════════════════════════════════════════════════════
   async createShortlist() {
     const client = await CSRShortlist.#pool.connect();
     try {
@@ -46,10 +53,13 @@ export class CSRShortlist {
     }
   }
 
-  // ═══════════════ Add ServiceRequest to Shortlist ════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Add ServiceRequest to Shortlist ══════════════════════════════════════
   async addServiceRequest(serviceRequest) {
     if (!(serviceRequest instanceof ServiceRequest)) {
       throw new TypeError("Expected serviceRequest to be ServiceRequest");
+    }
+    if (!serviceRequest.id) {
+      throw new Error("ServiceRequest must have a valid ID");
     }
 
     const item = {
@@ -74,7 +84,7 @@ export class CSRShortlist {
     }
   }
 
-  // ═══════════════ Load ServiceRequests ════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Load ServiceRequests ══════════════════════════════════════════════════
   async loadServiceRequests() {
     const client = await CSRShortlist.#pool.connect();
     try {
@@ -96,7 +106,7 @@ export class CSRShortlist {
     }
   }
 
-  // ═══════════════ Remove Item from Shortlist ══════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Remove Item from Shortlist ═══════════════════════════════════════════
   static async removeItemById(itemId) {
     const client = await this.#pool.connect();
     try {
@@ -110,7 +120,7 @@ export class CSRShortlist {
     }
   }
 
-  // ═══════════════ Static: Load Shortlist By CSR ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Static: Load Shortlist By CSR ════════════════════════════════════════
   static async getByCSR(csrId) {
     const client = await this.#pool.connect();
     try {
@@ -122,6 +132,16 @@ export class CSRShortlist {
 
       const row = result.rows[0];
       const csrOwner = await UserAccount.findById(row.csrid);
+      
+      if (!csrOwner) {
+        throw new Error(`CSR owner with ID ${row.csrid} not found`);
+      }
+      
+      // Validate CSR role
+      if (csrOwner.profile.roleName !== 'CSR Rep') {
+        throw new Error(`User ${csrOwner.id} is not a CSR Rep`);
+      }
+      
       const shortlist = new CSRShortlist(csrOwner);
       shortlist.#id = row.id;
       shortlist.#dateCreated = new Date(row.datecreated);

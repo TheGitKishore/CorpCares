@@ -43,11 +43,17 @@ export class UserAccountUpdateController {
         };
       }
 
+      // Validate password if provided
+      let validatedPassword = null;
+      if (rawPassword && typeof rawPassword === 'string' && rawPassword.trim().length > 0) {
+        validatedPassword = rawPassword.trim();
+      }
+
       const success = await this.#userAccount.updateUserAccount(
         username,
         name,
         email,
-        rawPassword,
+        validatedPassword, // Pass null if not provided/valid
         profile,
         isActive
       );

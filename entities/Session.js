@@ -11,6 +11,9 @@ export class Session {
     port: 1234
   });
 
+  // Configurable session timeout (in minutes)
+  static SESSION_TIMEOUT_MINUTES = 60;
+
   #id;
   #sessionToken;
   #userAccount; // UserAccount instance
@@ -36,12 +39,12 @@ export class Session {
   get lastActivity() { return this.#lastActivity; }
   get isActive() { return this.#isActive; }
 
-  // ═══════════════ Generate Secure Token ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Generate Secure Token ══════════════════════════════════════════════════
   #generateToken() {
     return crypto.randomBytes(32).toString('hex');
   }
 
-  // ═══════════════ Create Session ══════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Create Session ═════════════════════════════════════════════════════════
   async createSession() {
     const client = await Session.#pool.connect();
     try {
@@ -63,7 +66,7 @@ export class Session {
     }
   }
 
-  // ═══════════════ Update Last Activity ════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Update Last Activity ═══════════════════════════════════════════════════
   async updateActivity() {
     this.#lastActivity = new Date();
     const client = await Session.#pool.connect();
@@ -77,7 +80,7 @@ export class Session {
     }
   }
 
-  // ═══════════════ End Session ═════════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ End Session ════════════════════════════════════════════════════════════
   async endSession() {
     this.#isActive = false;
     const client = await Session.#pool.connect();
@@ -92,7 +95,7 @@ export class Session {
     }
   }
 
-  // ═══════════════ Find Session By Token ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Find Session By Token ══════════════════════════════════════════════════
   static async findByToken(sessionToken) {
     const client = await this.#pool.connect();
     try {
@@ -121,17 +124,20 @@ export class Session {
     }
   }
 
-  // ═══════════════ Validate Session (Check Timeout) ════════════════════════════════════════════════════════════
-  isValid(timeoutMinutes = 60) {
+  // ═══════════════════════════════════ Validate Session (Check Timeout) ══════════════════════════════════════
+  isValid(timeoutMinutes = null) {
     if (!this.#isActive) return false;
+    
+    // Use provided timeout or default from class
+    const timeout = timeoutMinutes !== null ? timeoutMinutes : Session.SESSION_TIMEOUT_MINUTES;
     
     const now = new Date();
     const diffMinutes = (now - this.#lastActivity) / (1000 * 60);
     
-    return diffMinutes < timeoutMinutes;
+    return diffMinutes < timeout;
   }
 
-  // ═══════════════ End All Sessions For User ═══════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ End All Sessions For User ═════════════════════════════════════════════
   static async endAllSessionsForUser(userId) {
     const client = await this.#pool.connect();
     try {
@@ -145,11 +151,12 @@ export class Session {
     }
   }
 
-  // ═══════════════ Cleanup Expired Sessions (Background Job) ═══════════════════════════════════════════════════
-  static async cleanupExpiredSessions(timeoutMinutes = 60) {
+  // ═══════════════════════════════════ Cleanup Expired Sessions (Background Job) ═════════════════════════════
+  static async cleanupExpiredSessions(timeoutMinutes = null) {
+    const timeout = timeoutMinutes !== null ? timeoutMinutes : Session.SESSION_TIMEOUT_MINUTES;
     const client = await this.#pool.connect();
     try {
-      const cutoffTime = new Date(Date.now() - timeoutMinutes * 60 * 1000);
+      const cutoffTime = new Date(Date.now() - timeout * 60 * 1000);
       const result = await client.query(
         `UPDATE Session SET isActive = false 
          WHERE isActive = true AND lastActivity < $1`,

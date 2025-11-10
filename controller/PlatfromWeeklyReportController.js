@@ -1,3 +1,7 @@
+import { ServiceRequest } from '../entities/ServiceRequest.js';
+import { AuthorizationHelper } from '../helpers/AuthorizationHelper.js';
+import { Permissions } from '../constants/Permissions.js';
+
 export class PlatformWeeklyReportController {
   
   /**

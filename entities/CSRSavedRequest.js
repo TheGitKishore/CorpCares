@@ -20,6 +20,13 @@ export class CSRSavedRequest {
     if (!(csrOwner instanceof UserAccount)) {
       throw new TypeError("Expected csrOwner to be UserAccount");
     }
+    if (!csrOwner.id) {
+      throw new Error("CSR owner must have a valid ID");
+    }
+    // Validate CSR role
+    if (csrOwner.profile.roleName !== 'CSR Rep') {
+      throw new Error("Owner must have 'CSR Rep' role to create saved list");
+    }
     this.#csrOwner = csrOwner;
     this.#serviceRequests = [];
     this.#dateCreated = new Date();
@@ -30,7 +37,7 @@ export class CSRSavedRequest {
   get serviceRequests() { return this.#serviceRequests; }
   get dateCreated() { return this.#dateCreated; }
 
-  // ═══════════════ Create Saved List ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Create Saved List ═════════════════════════════════════════════════════
   async createSavedList() {
     const client = await CSRSavedRequest.#pool.connect();
     try {
@@ -46,10 +53,13 @@ export class CSRSavedRequest {
     }
   }
 
-  // ═══════════════ Add ServiceRequest to Saved List ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Add ServiceRequest to Saved List ═════════════════════════════════════
   async addServiceRequest(serviceRequest) {
     if (!(serviceRequest instanceof ServiceRequest)) {
       throw new TypeError("Expected serviceRequest to be ServiceRequest");
+    }
+    if (!serviceRequest.id) {
+      throw new Error("ServiceRequest must have a valid ID");
     }
 
     const item = {
@@ -74,7 +84,7 @@ export class CSRSavedRequest {
     }
   }
 
-  // ═══════════════ Load ServiceRequests ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Load ServiceRequests ══════════════════════════════════════════════════
   async loadServiceRequests() {
     const client = await CSRSavedRequest.#pool.connect();
     try {
@@ -96,7 +106,7 @@ export class CSRSavedRequest {
     }
   }
 
-  // ═══════════════ Remove Item from Saved List ════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Remove Item from Saved List ══════════════════════════════════════════
   static async removeItemById(itemId) {
     const client = await this.#pool.connect();
     try {
@@ -110,7 +120,7 @@ export class CSRSavedRequest {
     }
   }
 
-  // ═══════════════ Static: Load Saved List By CSR ═════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Static: Load Saved List By CSR ═══════════════════════════════════════
   static async getByCSR(csrId) {
     const client = await this.#pool.connect();
     try {
@@ -122,6 +132,16 @@ export class CSRSavedRequest {
 
       const row = result.rows[0];
       const csrOwner = await UserAccount.findById(row.csrid);
+      
+      if (!csrOwner) {
+        throw new Error(`CSR owner with ID ${row.csrid} not found`);
+      }
+      
+      // Validate CSR role
+      if (csrOwner.profile.roleName !== 'CSR Rep') {
+        throw new Error(`User ${csrOwner.id} is not a CSR Rep`);
+      }
+      
       const savedList = new CSRSavedRequest(csrOwner);
       savedList.#id = row.id;
       savedList.#dateCreated = new Date(row.datecreated);

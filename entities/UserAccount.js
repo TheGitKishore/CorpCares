@@ -38,9 +38,9 @@ export class UserAccount {
   get profile() { return this.#profile; }
   get dateCreated() { return this.#dateCreated; }
   get isActive() { return this.#isActive; }
-  get passwordHash() { return this.#passwordHash.hash; } // Expose hash for verification
+  get passwordHash() { return this.#passwordHash.hash; }
 
-  // ════════════════════════════ Create ═════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Create ═══════════════════════════════════════════════════════════════════
   async createUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
@@ -65,7 +65,7 @@ export class UserAccount {
     }
   }
 
-  // ════════════════════════════ Update (with optional password) ════════════════════════════════════════════════
+  // ═══════════════════════════════════ Update (with optional password) ═══════════════════════════════════════════
   async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
     this.#username = username;
     this.#name = name;
@@ -73,9 +73,10 @@ export class UserAccount {
     this.#isActive = isActive;
     this.#profile = profile;
 
-    // Only update password if provided
-    if (rawPassword) {
-      this.#passwordHash = new Password(String(rawPassword));
+    // Only update password if provided and valid
+    if (rawPassword !== null && rawPassword !== undefined && 
+        typeof rawPassword === 'string' && rawPassword.trim().length > 0) {
+      this.#passwordHash = new Password(rawPassword.trim());
     }
 
     const client = await UserAccount.#pool.connect();
@@ -100,7 +101,7 @@ export class UserAccount {
     }
   }
 
-  // ════════════════════════════ Delete (with cascade cleanup) ══════════════════════════════════════════════════
+  // ═══════════════════════════════════ Delete (with cascade cleanup) ═══════════════════════════════════════════
   async deleteUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
@@ -156,7 +157,7 @@ export class UserAccount {
     }
   }
 
-  // ════════════════════════════ View All ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ View All ════════════════════════════════════════════════════════════════
   static async viewUserAccounts() {
     const client = await this.#pool.connect();
     try {
@@ -180,7 +181,7 @@ export class UserAccount {
     }
   }
 
-  // ════════════════════════════ View Single By ID ══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ View Single By ID ══════════════════════════════════════════════════════
   static async findById(userId) {
     const client = await this.#pool.connect();
     try {
@@ -207,7 +208,7 @@ export class UserAccount {
     }
   }
 
-  // ════════════════════════════ Find By Username ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Find By Username ══════════════════════════════════════════════════════
   static async findByUsername(username) {
     const client = await this.#pool.connect();
     try {
@@ -234,7 +235,7 @@ export class UserAccount {
     }
   }
 
-  // ════════════════════════════ Exists by ID ═══════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Exists by ID ═══════════════════════════════════════════════════════════
   static async existsById(userId) {
     const client = await this.#pool.connect();
     try {
@@ -248,7 +249,7 @@ export class UserAccount {
     }
   }
 
-  // ════════════════════════════ Exists by Username ═════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Exists by Username ════════════════════════════════════════════════════
   static async existsByUsername(username) {
     const client = await this.#pool.connect();
     try {
@@ -262,7 +263,7 @@ export class UserAccount {
     }
   }
 
-  // ════════════════════════════ Verify Password ════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════ Verify Password ═══════════════════════════════════════════════════════
   /**
    * Verify a raw password against this user account's stored hash
    * Returns: boolean indicating if password is correct
