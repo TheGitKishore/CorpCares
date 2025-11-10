@@ -30,7 +30,7 @@ export class CSRSavedRequest {
   get serviceRequests() { return this.#serviceRequests; }
   get dateCreated() { return this.#dateCreated; }
 
-  // ─── Create Saved List ──────────────────────────────────────────────
+  // ═══════════════ Create Saved List ═══════════════════════════════════════════════════════════════════════════
   async createSavedList() {
     const client = await CSRSavedRequest.#pool.connect();
     try {
@@ -46,7 +46,7 @@ export class CSRSavedRequest {
     }
   }
 
-  // ─── Add ServiceRequest to Saved List ───────────────────────────────
+  // ═══════════════ Add ServiceRequest to Saved List ═══════════════════════════════════════════════════════════
   async addServiceRequest(serviceRequest) {
     if (!(serviceRequest instanceof ServiceRequest)) {
       throw new TypeError("Expected serviceRequest to be ServiceRequest");
@@ -74,7 +74,7 @@ export class CSRSavedRequest {
     }
   }
 
-  // ─── Load ServiceRequests ───────────────────────────────────────────
+  // ═══════════════ Load ServiceRequests ═══════════════════════════════════════════════════════════════════════
   async loadServiceRequests() {
     const client = await CSRSavedRequest.#pool.connect();
     try {
@@ -96,7 +96,21 @@ export class CSRSavedRequest {
     }
   }
 
-  // ─── Static: Load Saved List By CSR ─────────────────────────────────
+  // ═══════════════ Remove Item from Saved List ════════════════════════════════════════════════════════════════
+  static async removeItemById(itemId) {
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        `DELETE FROM CSRSavedRequestItem WHERE id = $1`,
+        [itemId]
+      );
+      return result.rowCount === 1;
+    } finally {
+      client.release();
+    }
+  }
+
+  // ═══════════════ Static: Load Saved List By CSR ═════════════════════════════════════════════════════════════
   static async getByCSR(csrId) {
     const client = await this.#pool.connect();
     try {

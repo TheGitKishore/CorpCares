@@ -36,12 +36,12 @@ export class Session {
   get lastActivity() { return this.#lastActivity; }
   get isActive() { return this.#isActive; }
 
-  // ─── Generate Secure Token ────────────────────────────
+  // ═══════════════ Generate Secure Token ═══════════════════════════════════════════════════════════════════════
   #generateToken() {
     return crypto.randomBytes(32).toString('hex');
   }
 
-  // ─── Create Session ───────────────────────────────────
+  // ═══════════════ Create Session ══════════════════════════════════════════════════════════════════════════════
   async createSession() {
     const client = await Session.#pool.connect();
     try {
@@ -63,7 +63,7 @@ export class Session {
     }
   }
 
-  // ─── Update Last Activity ─────────────────────────────
+  // ═══════════════ Update Last Activity ════════════════════════════════════════════════════════════════════════
   async updateActivity() {
     this.#lastActivity = new Date();
     const client = await Session.#pool.connect();
@@ -77,7 +77,7 @@ export class Session {
     }
   }
 
-  // ─── End Session ──────────────────────────────────────
+  // ═══════════════ End Session ═════════════════════════════════════════════════════════════════════════════════
   async endSession() {
     this.#isActive = false;
     const client = await Session.#pool.connect();
@@ -92,7 +92,7 @@ export class Session {
     }
   }
 
-  // ─── Find Session By Token ────────────────────────────
+  // ═══════════════ Find Session By Token ═══════════════════════════════════════════════════════════════════════
   static async findByToken(sessionToken) {
     const client = await this.#pool.connect();
     try {
@@ -121,7 +121,7 @@ export class Session {
     }
   }
 
-  // ─── Validate Session (Check Timeout) ─────────────────
+  // ═══════════════ Validate Session (Check Timeout) ════════════════════════════════════════════════════════════
   isValid(timeoutMinutes = 60) {
     if (!this.#isActive) return false;
     
@@ -131,13 +131,29 @@ export class Session {
     return diffMinutes < timeoutMinutes;
   }
 
-  // ─── End All Sessions For User ────────────────────────
+  // ═══════════════ End All Sessions For User ═══════════════════════════════════════════════════════════════════
   static async endAllSessionsForUser(userId) {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
         `UPDATE Session SET isActive = false WHERE userId = $1 AND isActive = true`,
         [userId]
+      );
+      return result.rowCount;
+    } finally {
+      client.release();
+    }
+  }
+
+  // ═══════════════ Cleanup Expired Sessions (Background Job) ═══════════════════════════════════════════════════
+  static async cleanupExpiredSessions(timeoutMinutes = 60) {
+    const client = await this.#pool.connect();
+    try {
+      const cutoffTime = new Date(Date.now() - timeoutMinutes * 60 * 1000);
+      const result = await client.query(
+        `UPDATE Session SET isActive = false 
+         WHERE isActive = true AND lastActivity < $1`,
+        [cutoffTime.toISOString()]
       );
       return result.rowCount;
     } finally {

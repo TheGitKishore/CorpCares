@@ -30,7 +30,7 @@ export class CSRShortlist {
   get serviceRequests() { return this.#serviceRequests; }
   get dateCreated() { return this.#dateCreated; }
 
-  // ─── Create Shortlist ───────────────────────────────
+  // ═══════════════ Create Shortlist ════════════════════════════════════════════════════════════════════════════
   async createShortlist() {
     const client = await CSRShortlist.#pool.connect();
     try {
@@ -46,7 +46,7 @@ export class CSRShortlist {
     }
   }
 
-  // ─── Add ServiceRequest to Shortlist ────────────────
+  // ═══════════════ Add ServiceRequest to Shortlist ════════════════════════════════════════════════════════════
   async addServiceRequest(serviceRequest) {
     if (!(serviceRequest instanceof ServiceRequest)) {
       throw new TypeError("Expected serviceRequest to be ServiceRequest");
@@ -74,7 +74,7 @@ export class CSRShortlist {
     }
   }
 
-  // ─── Load ServiceRequests ───────────────────────────
+  // ═══════════════ Load ServiceRequests ════════════════════════════════════════════════════════════════════════
   async loadServiceRequests() {
     const client = await CSRShortlist.#pool.connect();
     try {
@@ -96,7 +96,21 @@ export class CSRShortlist {
     }
   }
 
-  // ─── Static: Load Shortlist By CSR ──────────────────
+  // ═══════════════ Remove Item from Shortlist ══════════════════════════════════════════════════════════════════
+  static async removeItemById(itemId) {
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        `DELETE FROM CSRShortlistItem WHERE id = $1`,
+        [itemId]
+      );
+      return result.rowCount === 1;
+    } finally {
+      client.release();
+    }
+  }
+
+  // ═══════════════ Static: Load Shortlist By CSR ═══════════════════════════════════════════════════════════════
   static async getByCSR(csrId) {
     const client = await this.#pool.connect();
     try {

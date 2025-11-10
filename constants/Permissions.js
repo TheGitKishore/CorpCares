@@ -78,7 +78,6 @@ export const RolePermissions = {
     Permissions.UNSHORTLIST_REQUEST,
     Permissions.VIEW_SAVED_REQUESTS,
     Permissions.VIEW_SHORTLISTED_REQUESTS,
-    Permissions.DELETE_ANY_REQUEST,
     Permissions.UPDATE_REQUEST_STATUS
   ],
   

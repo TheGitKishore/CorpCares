@@ -40,7 +40,7 @@ export class UserAccount {
   get isActive() { return this.#isActive; }
   get passwordHash() { return this.#passwordHash.hash; } // Expose hash for verification
 
-  // ═══════════════ Create ═══════════════════════════════════════════════════
+  // ════════════════════════════ Create ═════════════════════════════════════════════════════════════════════════
   async createUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
@@ -65,14 +65,18 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════ Update ═══════════════════════════════════════════════════
+  // ════════════════════════════ Update (with optional password) ════════════════════════════════════════════════
   async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
     this.#username = username;
     this.#name = name;
     this.#email = email;
     this.#isActive = isActive;
     this.#profile = profile;
-    this.#passwordHash = new Password(String(rawPassword));
+
+    // Only update password if provided
+    if (rawPassword) {
+      this.#passwordHash = new Password(String(rawPassword));
+    }
 
     const client = await UserAccount.#pool.connect();
     try {
@@ -96,21 +100,63 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════ Delete ═══════════════════════════════════════════════════
+  // ════════════════════════════ Delete (with cascade cleanup) ══════════════════════════════════════════════════
   async deleteUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
+      await client.query('BEGIN');
+
+      // Cascade delete sessions
+      await client.query(
+        `DELETE FROM Session WHERE userId = $1`,
+        [this.#id]
+      );
+
+      // Cascade delete saved requests lists
+      await client.query(
+        `DELETE FROM CSRSavedRequestItem WHERE savedListId IN 
+         (SELECT id FROM CSRSavedRequest WHERE csrId = $1)`,
+        [this.#id]
+      );
+      await client.query(
+        `DELETE FROM CSRSavedRequest WHERE csrId = $1`,
+        [this.#id]
+      );
+
+      // Cascade delete shortlists
+      await client.query(
+        `DELETE FROM CSRShortlistItem WHERE shortlistId IN 
+         (SELECT id FROM CSRShortlist WHERE csrId = $1)`,
+        [this.#id]
+      );
+      await client.query(
+        `DELETE FROM CSRShortlist WHERE csrId = $1`,
+        [this.#id]
+      );
+
+      // Delete service requests owned by this user
+      await client.query(
+        `DELETE FROM ServiceRequest WHERE ownerId = $1`,
+        [this.#id]
+      );
+
+      // Finally, delete the user account
       const result = await client.query(
         `DELETE FROM UserAccount WHERE userID = $1`,
         [this.#id]
       );
+
+      await client.query('COMMIT');
       return result.rowCount === 1;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
     } finally {
       client.release();
     }
   }
 
-  // ═══════════════ View All ══════════════════════════════════════════════════
+  // ════════════════════════════ View All ═══════════════════════════════════════════════════════════════════════
   static async viewUserAccounts() {
     const client = await this.#pool.connect();
     try {
@@ -134,7 +180,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════ View Single By ID ════════════════════════════════════════
+  // ════════════════════════════ View Single By ID ══════════════════════════════════════════════════════════════
   static async findById(userId) {
     const client = await this.#pool.connect();
     try {
@@ -161,7 +207,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════ Find By Username ══════════════════════════════════════════
+  // ════════════════════════════ Find By Username ═══════════════════════════════════════════════════════════════
   static async findByUsername(username) {
     const client = await this.#pool.connect();
     try {
@@ -188,7 +234,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════ Exists by ID ══════════════════════════════════════════════
+  // ════════════════════════════ Exists by ID ═══════════════════════════════════════════════════════════════════
   static async existsById(userId) {
     const client = await this.#pool.connect();
     try {
@@ -202,7 +248,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════ Exists by Username ════════════════════════════════════════
+  // ════════════════════════════ Exists by Username ═════════════════════════════════════════════════════════════
   static async existsByUsername(username) {
     const client = await this.#pool.connect();
     try {
@@ -216,7 +262,7 @@ export class UserAccount {
     }
   }
 
-  // ═══════════════ Verify Password ═══════════════════════════════════════════
+  // ════════════════════════════ Verify Password ════════════════════════════════════════════════════════════════
   /**
    * Verify a raw password against this user account's stored hash
    * Returns: boolean indicating if password is correct

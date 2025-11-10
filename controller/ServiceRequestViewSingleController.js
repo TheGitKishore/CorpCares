@@ -26,9 +26,8 @@ export class ServiceRequestViewSingleController {
         };
       }
 
-      // If user only has VIEW_OWN_REQUESTS, verify ownership
-      if (auth.userAccount.profile.hasPermission(Permissions.VIEW_OWN_REQUESTS) && 
-          !auth.userAccount.profile.hasPermission(Permissions.VIEW_ALL_REQUESTS)) {
+      // If user does NOT have VIEW_ALL_REQUESTS, they can only view their own
+      if (!auth.userAccount.profile.hasPermission(Permissions.VIEW_ALL_REQUESTS)) {
         if (request.owner.id !== auth.userAccount.id) {
           return { 
             success: false, 
