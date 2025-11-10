@@ -1,35 +1,40 @@
 import { UserProfile } from '../entities/UserProfile.js';
+import { AuthorizationHelper } from '../helpers/AuthorizationHelper.js';
+import { Permissions } from '../constants/Permissions.js';
 
-export class UserProfileUpdateController {
+export class UserProfileDeleteController {
   #profile;
 
   constructor(profile) {
     this.#profile = profile;
   }
 
-  /**
-   * Hydrate controller with an existing UserProfile by roleName.
-   */
   static async findByRoleName(roleName) {
     const profile = await UserProfile.findByRoleName(roleName);
     if (!(profile instanceof UserProfile)) {
       throw new Error(`UserProfile with roleName '${roleName}' not found.`);
     }
-    return new UserProfileUpdateController(profile);
+    return new UserProfileDeleteController(profile);
   }
 
-  /**
-   * Update the hydrated UserProfile.
-   */
-  async updateUserProfile(description) {
+  async deleteUserProfile(sessionToken) {
     try {
-      if (!description) {
-        throw new Error("Description is required.");
+      // Check authorization - must have DELETE_PROFILE permission
+      const auth = await AuthorizationHelper.checkPermission(sessionToken, Permissions.DELETE_PROFILE);
+      
+      if (!auth.authorized) {
+        return { success: false, message: auth.message };
       }
-      const success = await this.#profile.updateUserProfile(description);
-      return success;
+
+      const success = await this.#profile.deleteUserProfile();
+      
+      return { 
+        success: success, 
+        message: success ? "User profile deleted successfully" : "Failed to delete user profile" 
+      };
+
     } catch (error) {
-      throw new Error(`User profile update failed: ${error.message}`);
+      throw new Error(`User profile deletion failed: ${error.message}`);
     }
   }
 }

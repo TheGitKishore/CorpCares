@@ -1,5 +1,7 @@
 import { UserAccount } from '../entities/UserAccount.js';
 import { UserProfile } from '../entities/UserProfile.js';
+import { AuthorizationHelper } from '../helpers/AuthorizationHelper.js';
+import { Permissions } from '../constants/Permissions.js';
 
 export class UserAccountUpdateController {
   #userAccount;
@@ -23,11 +25,22 @@ export class UserAccountUpdateController {
    * Update the hydrated UserAccount.
    * Hydrates UserProfile dynamically by roleName.
    */
-  async updateUserAccount(username, name, email, rawPassword, roleName, isActive) {
+  async updateUserAccount(sessionToken, username, name, email, rawPassword, roleName, isActive) {
     try {
+      // Check authorization - must have UPDATE_USER permission
+      const auth = await AuthorizationHelper.checkPermission(sessionToken, Permissions.UPDATE_USER);
+      
+      if (!auth.authorized) {
+        return { success: false, message: auth.message };
+      }
+
+      // Find profile
       const profile = await UserProfile.findByRoleName(roleName);
       if (!profile) {
-        throw new Error(`UserProfile with roleName '${roleName}' not found.`);
+        return { 
+          success: false, 
+          message: `UserProfile with roleName '${roleName}' not found.` 
+        };
       }
 
       const success = await this.#userAccount.updateUserAccount(
@@ -39,7 +52,11 @@ export class UserAccountUpdateController {
         isActive
       );
 
-      return success;
+      return { 
+        success: success, 
+        message: success ? "User account updated successfully" : "Failed to update user account" 
+      };
+
     } catch (error) {
       throw new Error(`User account update failed: ${error.message}`);
     }

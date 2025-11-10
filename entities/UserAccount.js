@@ -38,8 +38,9 @@ export class UserAccount {
   get profile() { return this.#profile; }
   get dateCreated() { return this.#dateCreated; }
   get isActive() { return this.#isActive; }
+  get passwordHash() { return this.#passwordHash.hash; } // Expose hash for verification
 
-  // ─── Create ───────────────────────────────────────────────
+  // ═══════════════ Create ═══════════════════════════════════════════════════
   async createUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
@@ -64,7 +65,7 @@ export class UserAccount {
     }
   }
 
-  // ─── Update ───────────────────────────────────────────────
+  // ═══════════════ Update ═══════════════════════════════════════════════════
   async updateUserAccount(username, name, email, rawPassword, profile, isActive) {
     this.#username = username;
     this.#name = name;
@@ -95,7 +96,7 @@ export class UserAccount {
     }
   }
 
-  // ─── Delete ───────────────────────────────────────────────
+  // ═══════════════ Delete ═══════════════════════════════════════════════════
   async deleteUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
@@ -109,19 +110,20 @@ export class UserAccount {
     }
   }
 
-  // ─── View All ─────────────────────────────────────────────
+  // ═══════════════ View All ══════════════════════════════════════════════════
   static async viewUserAccounts() {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        `SELECT ua.*, up.roleName, up.description
+        `SELECT ua.*, up.roleName, up.description, up.permissions
          FROM UserAccount ua
          JOIN UserProfile up ON ua.userProfileRoleName = up.roleName`
       );
 
       return result.rows.map(row => {
-        const profile = new UserProfile(row.rolename, row.description);
-        const account = new UserAccount(row.username, row.name, new Password(row.password), row.email, profile);
+        const profile = new UserProfile(row.rolename, row.description, row.permissions || []);
+        const passwordHash = Password.fromHash(row.password);
+        const account = new UserAccount(row.username, row.name, passwordHash, row.email, profile);
         account.#id = row.userid;
         account.#dateCreated = new Date(row.datecreated);
         account.#isActive = row.isactive;
@@ -132,12 +134,12 @@ export class UserAccount {
     }
   }
 
-  // ─── View Single ──────────────────────────────────────────
+  // ═══════════════ View Single By ID ════════════════════════════════════════
   static async findById(userId) {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        `SELECT ua.*, up.roleName, up.description
+        `SELECT ua.*, up.roleName, up.description, up.permissions
          FROM UserAccount ua
          JOIN UserProfile up ON ua.userProfileRoleName = up.roleName
          WHERE ua.userID = $1`,
@@ -147,8 +149,9 @@ export class UserAccount {
       if (result.rowCount === 0) return null;
       const row = result.rows[0];
 
-      const profile = new UserProfile(row.rolename, row.description);
-      const account = new UserAccount(row.username, row.name, new Password(row.password), row.email, profile);
+      const profile = new UserProfile(row.rolename, row.description, row.permissions || []);
+      const passwordHash = Password.fromHash(row.password);
+      const account = new UserAccount(row.username, row.name, passwordHash, row.email, profile);
       account.#id = row.userid;
       account.#dateCreated = new Date(row.datecreated);
       account.#isActive = row.isactive;
@@ -158,7 +161,34 @@ export class UserAccount {
     }
   }
 
-  // ─── Exists by ID ─────────────────────────────────────────
+  // ═══════════════ Find By Username ══════════════════════════════════════════
+  static async findByUsername(username) {
+    const client = await this.#pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT ua.*, up.roleName, up.description, up.permissions
+         FROM UserAccount ua
+         JOIN UserProfile up ON ua.userProfileRoleName = up.roleName
+         WHERE ua.username = $1`,
+        [username]
+      );
+
+      if (result.rowCount === 0) return null;
+      const row = result.rows[0];
+
+      const profile = new UserProfile(row.rolename, row.description, row.permissions || []);
+      const passwordHash = Password.fromHash(row.password);
+      const account = new UserAccount(row.username, row.name, passwordHash, row.email, profile);
+      account.#id = row.userid;
+      account.#dateCreated = new Date(row.datecreated);
+      account.#isActive = row.isactive;
+      return account;
+    } finally {
+      client.release();
+    }
+  }
+
+  // ═══════════════ Exists by ID ══════════════════════════════════════════════
   static async existsById(userId) {
     const client = await this.#pool.connect();
     try {
@@ -172,7 +202,7 @@ export class UserAccount {
     }
   }
 
-  // ─── Exists by Username ───────────────────────────────────
+  // ═══════════════ Exists by Username ════════════════════════════════════════
   static async existsByUsername(username) {
     const client = await this.#pool.connect();
     try {
@@ -184,5 +214,15 @@ export class UserAccount {
     } finally {
       client.release();
     }
+  }
+
+  // ═══════════════ Verify Password ═══════════════════════════════════════════
+  /**
+   * Verify a raw password against this user account's stored hash
+   * Returns: boolean indicating if password is correct
+   */
+  verifyPassword(rawPassword) {
+    const passwordObj = Password.fromHash(this.#passwordHash.hash);
+    return passwordObj.verify(rawPassword);
   }
 }

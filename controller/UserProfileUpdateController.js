@@ -1,4 +1,6 @@
 import { UserProfile } from '../entities/UserProfile.js';
+import { AuthorizationHelper } from '../helpers/AuthorizationHelper.js';
+import { Permissions } from '../constants/Permissions.js';
 
 export class UserProfileUpdateController {
   #profile;
@@ -20,12 +22,24 @@ export class UserProfileUpdateController {
 
   /**
    * Update the hydrated UserProfile.
-   * Allows updating both roleName and description.
+   * Allows updating roleName, description, and permissions.
    */
-  async updateUserProfile(newRoleName, newDescription) {
+  async updateUserProfile(sessionToken, newRoleName, newDescription, newPermissions) {
     try {
-      const success = await this.#profile.updateUserProfile(newRoleName, newDescription);
-      return success;
+      // Check authorization - must have UPDATE_PROFILE permission
+      const auth = await AuthorizationHelper.checkPermission(sessionToken, Permissions.UPDATE_PROFILE);
+      
+      if (!auth.authorized) {
+        return { success: false, message: auth.message };
+      }
+
+      const success = await this.#profile.updateUserProfile(newRoleName, newDescription, newPermissions);
+      
+      return { 
+        success: success, 
+        message: success ? "User profile updated successfully" : "Failed to update user profile" 
+      };
+
     } catch (error) {
       throw new Error(`User profile update failed: ${error.message}`);
     }

@@ -1,4 +1,6 @@
 import { UserAccount } from '../entities/UserAccount.js';
+import { AuthorizationHelper } from '../helpers/AuthorizationHelper.js';
+import { Permissions } from '../constants/Permissions.js';
 
 export class UserAccountDeleteController {
   #userAccount;
@@ -26,16 +28,24 @@ export class UserAccountDeleteController {
   /**
    * Deletes the hydrated user account.
    */
-  async deleteUserAccount() {
+  async deleteUserAccount(sessionToken) {
     try {
+      // Check authorization - must have DELETE_USER permission
+      const auth = await AuthorizationHelper.checkPermission(sessionToken, Permissions.DELETE_USER);
+      
+      if (!auth.authorized) {
+        return { success: false, message: auth.message };
+      }
+
       const success = await this.#userAccount.deleteUserAccount();
-      return success;
+      
+      return { 
+        success: success, 
+        message: success ? "User account deleted successfully" : "Failed to delete user account" 
+      };
+
     } catch (error) {
       throw new Error(`User account deletion failed: ${error.message}`);
     }
   }
 }
-
-// Example Boundary Usage
-// const controller = await UserAccountDeleteController.findById(userId);
-// await controller.deleteUserAccount();
