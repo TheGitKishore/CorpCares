@@ -35,8 +35,8 @@ export class CSRShortlistRemoveController {
         return { success: false, message: "Service request not found in shortlist" };
       }
 
-      // Remove from database
-      const success = await this.#removeShortlistItem(item.id);
+      // Remove from database using entity method
+      const success = await CSRShortlist.removeItemById(item.id);
 
       if (success) {
         // Decrement shortlist count on ServiceRequest
@@ -53,31 +53,6 @@ export class CSRShortlistRemoveController {
 
     } catch (error) {
       throw new Error(`Failed to remove from shortlist: ${error.message}`);
-    }
-  }
-
-  /**
-   * Helper: Remove shortlist item by ID
-   */
-  async #removeShortlistItem(itemId) {
-    const { Pool } = await import('pg');
-    const pool = new Pool({
-      user: '',
-      host: '',
-      database: '',
-      password: '',
-      port: 1234
-    });
-
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        `DELETE FROM CSRShortlistItem WHERE id = $1`,
-        [itemId]
-      );
-      return result.rowCount === 1;
-    } finally {
-      client.release();
     }
   }
 }
