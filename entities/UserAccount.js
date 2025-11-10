@@ -142,13 +142,55 @@ export class UserAccount {
       );
 
       // Finally, delete the user account
+      await client.query('BEGIN');
+
+      // Cascade delete sessions
+      await client.query(
+        `DELETE FROM Session WHERE userId = $1`,
+        [this.#id]
+      );
+
+      // Cascade delete saved requests lists
+      await client.query(
+        `DELETE FROM CSRSavedRequestItem WHERE savedListId IN 
+         (SELECT id FROM CSRSavedRequest WHERE csrId = $1)`,
+        [this.#id]
+      );
+      await client.query(
+        `DELETE FROM CSRSavedRequest WHERE csrId = $1`,
+        [this.#id]
+      );
+
+      // Cascade delete shortlists
+      await client.query(
+        `DELETE FROM CSRShortlistItem WHERE shortlistId IN 
+         (SELECT id FROM CSRShortlist WHERE csrId = $1)`,
+        [this.#id]
+      );
+      await client.query(
+        `DELETE FROM CSRShortlist WHERE csrId = $1`,
+        [this.#id]
+      );
+
+      // Delete service requests owned by this user
+      await client.query(
+        `DELETE FROM ServiceRequest WHERE ownerId = $1`,
+        [this.#id]
+      );
+
+      // Finally, delete the user account
       const result = await client.query(
         `DELETE FROM UserAccount WHERE userID = $1`,
         [this.#id]
       );
 
       await client.query('COMMIT');
+
+      await client.query('COMMIT');
       return result.rowCount === 1;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

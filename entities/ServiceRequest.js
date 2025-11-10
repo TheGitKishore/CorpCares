@@ -36,7 +36,23 @@ export class ServiceRequest {
       throw new Error("Description cannot exceed 2000 characters");
     }
 
+    // Validation
+    if (!title || title.trim().length === 0) {
+      throw new Error("Title cannot be empty");
+    }
+    if (title.length > 200) {
+      throw new Error("Title cannot exceed 200 characters");
+    }
+    if (!description || description.trim().length === 0) {
+      throw new Error("Description cannot be empty");
+    }
+    if (description.length > 2000) {
+      throw new Error("Description cannot exceed 2000 characters");
+    }
+
     this.#id = null;
+    this.#title = title.trim();
+    this.#description = description.trim();
     this.#title = title.trim();
     this.#description = description.trim();
 
@@ -73,8 +89,26 @@ export class ServiceRequest {
     }
     this.#title = value.trim(); 
   }
+  set title(value) { 
+    if (!value || value.trim().length === 0) {
+      throw new Error("Title cannot be empty");
+    }
+    if (value.length > 200) {
+      throw new Error("Title cannot exceed 200 characters");
+    }
+    this.#title = value.trim(); 
+  }
 
   get description() { return this.#description; }
+  set description(value) { 
+    if (!value || value.trim().length === 0) {
+      throw new Error("Description cannot be empty");
+    }
+    if (value.length > 2000) {
+      throw new Error("Description cannot exceed 2000 characters");
+    }
+    this.#description = value.trim(); 
+  }
   set description(value) { 
     if (!value || value.trim().length === 0) {
       throw new Error("Description cannot be empty");
@@ -286,6 +320,10 @@ export class ServiceRequest {
         request.#description = row.description;
         request.#category = category;
         request.#owner = owner;
+        request.#title = row.title;
+        request.#description = row.description;
+        request.#category = category;
+        request.#owner = owner;
         request.#datePosted = new Date(row.dateposted);
         request.#status = row.status;
         request.#shortlistCount = row.shortlistcount;
@@ -323,6 +361,10 @@ export class ServiceRequest {
       request.#description = row.description;
       request.#category = category;
       request.#owner = owner;
+      request.#title = row.title;
+      request.#description = row.description;
+      request.#category = category;
+      request.#owner = owner;
       request.#datePosted = new Date(row.dateposted);
       request.#status = row.status;
       request.#shortlistCount = row.shortlistcount;
@@ -355,6 +397,10 @@ export class ServiceRequest {
 
       const request = Object.create(ServiceRequest.prototype);
       request.#id = row.id;
+      request.#title = row.title;
+      request.#description = row.description;
+      request.#category = category;
+      request.#owner = owner;
       request.#title = row.title;
       request.#description = row.description;
       request.#category = category;
@@ -628,6 +674,10 @@ export class ServiceRequest {
 
         const request = Object.create(ServiceRequest.prototype);
         request.#id = row.id;
+        request.#title = row.title;
+        request.#description = row.description;
+        request.#category = category;
+        request.#owner = owner;
         request.#title = row.title;
         request.#description = row.description;
         request.#category = category;
