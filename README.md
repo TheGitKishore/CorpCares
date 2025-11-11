@@ -1,2 +1,0 @@
-# taiga
-taiga warriors
