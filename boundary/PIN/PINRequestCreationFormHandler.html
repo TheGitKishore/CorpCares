@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Request</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    form {
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 30px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    label {
+      font-weight: bold;
+      color: #000;
+    }
+
+    input {
+      padding: 8px;
+      border: 1px solid #000;
+      background-color: #fff;
+      color: #000;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+
+    textarea {
+    resize: none;
+    width: 295px;
+    height: 100px;
+    }
+
+  </style>
+</head>
+<body>
+  <form id="userForm">
+    <label for="requestTitle">Request Title</label>
+    <input type="text" id="requestTitle" required />
+
+    <label for="description">Description</label>
+    <textarea id="description"></textarea>
+
+    <button type="submit">Submit Request</button>
+  </form>
+
+  <script type="module">
+    import { PINCreationController } from '../controller/PINRequestCreationController.js';
+  
+    const form = document.getElementById('userForm');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const requestTitle = document.getElementById('requestTitle').value.trim();
+      const description = document.getElementById('description').value.trim();
+
+      const controller = new PINRequestCreationController();
+
+      try {
+        const requestId = await controller.createRequest(requestTitle, description);
+        alert(`Request created successfully with ID: ${requestId}`);
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+  </script>
+
+</body>
+</html>

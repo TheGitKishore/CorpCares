@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>View PIN Requests</title>
+  <style>
+    body { font-family: Arial; padding: 30px; color: #000; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #000; padding: 8px; }
+    th { background: #f2f2f2; }
+    button { padding: 8px; background: #000; color: #fff; border: none; cursor: pointer; }
+    button:hover { background: #333; }
+  </style>
+</head>
+<body>
+  <h2>All PIN Requests</h2>
+  <button id="loadBtn">Load Requests</button>
+
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Title</th><th>Description</th><th>Status</th></tr>
+    </thead>
+    <tbody id="requestList">
+      <tr><td colspan="4" style="text-align:center;">No data</td></tr>
+    </tbody>
+  </table>
+
+  <script type="module">
+    import { CSRViewRequestController } from '../controller/CSRViewRequestController.js';
+
+    const btn = document.getElementById('loadBtn');
+    const tbody = document.getElementById('requestList');
+
+    btn.addEventListener('click', async () => {
+      const controller = new CSRViewRequestController();
+      try {
+        const requests = await controller.getAllRequests();
+        render(requests);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    function render(data) {
+      tbody.innerHTML = '';
+      if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No requests found</td></tr>`;
+        return;
+      }
+      for (const r of data) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.description}</td><td>${r.status}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+  </script>
+</body>
+</html>

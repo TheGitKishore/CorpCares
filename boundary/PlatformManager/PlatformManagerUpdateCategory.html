@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Update Category</title>
+  <style>
+    body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    form { border: 1px solid #000; padding: 30px; width: 300px; display: flex; flex-direction: column; gap: 15px; }
+    label { font-weight: bold; }
+    input, textarea { padding: 8px; border: 1px solid #000; }
+    button { padding: 10px; background: #000; color: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <form id="updateCategoryForm">
+    <h3>Update Category</h3>
+    <label for="categoryId">Category ID</label>
+    <input type="text" id="categoryId" required />
+
+    <label for="newName">New Name</label>
+    <input type="text" id="newName" required />
+
+    <label for="newDesc">New Description</label>
+    <textarea id="newDesc" required></textarea>
+
+    <button type="submit">Update</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('updateCategoryForm');
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = document.getElementById('categoryId').value;
+      const name = document.getElementById('newName').value;
+      const description = document.getElementById('newDesc').value;
+
+      const res = await fetch(`/api/categories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description })
+      });
+      const data = await res.json();
+      if (res.ok) alert('Category updated successfully');
+      else alert(`Error: ${data.error}`);
+    });
+  </script>
+</body>
+</html>
