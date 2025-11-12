@@ -4,11 +4,11 @@ import { UserAccount } from './UserAccount.js';
 
 export class ServiceRequest {
   static #pool = new Pool({
-    user: '',
-    host: '',
-    database: '',
-    password: '',
-    port: 1234
+    user: "UserAdmin",
+    host: "localhost",
+    database: "taigawarriors",
+    password: "useradmin1234",
+    port: 5432  //default postgres port
   });
 
   #id;
@@ -111,6 +111,19 @@ export class ServiceRequest {
   get status() { return this.#status; }
   get shortlistCount() { return this.#shortlistCount; }
   get saveCount() { return this.#saveCount; }
+
+
+// ═══════════════════════ Hydrating Rows ═══════════════════════
+
+static hydrateFromRow(row, category, owner) {
+  const request = new ServiceRequest(row.title, row.description, category, owner);
+  request.#id = row.id;
+  request.#datePosted = new Date(row.dateposted);
+  request.#status = row.status;
+  request.#shortlistCount = row.shortlistcount;
+  request.#saveCount = row.savecount;
+  return request;
+}
 
   // ═══════════════════════ Create ═══════════════════════
   async createServiceRequest() {
@@ -280,17 +293,9 @@ export class ServiceRequest {
           throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
         }
 
-        const request = Object.create(ServiceRequest.prototype);
-        request.#id = row.id;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
-        request.#datePosted = new Date(row.dateposted);
-        request.#status = row.status;
-        request.#shortlistCount = row.shortlistcount;
-        request.#saveCount = row.savecount;
+        const request = ServiceRequest.hydrateFromRow(row, category, owner);
         return request;
+
       }));
     } finally {
       client.release();
@@ -317,17 +322,7 @@ export class ServiceRequest {
         throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
       }
 
-      const request = Object.create(ServiceRequest.prototype);
-      request.#id = row.id;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
-      request.#datePosted = new Date(row.dateposted);
-      request.#status = row.status;
-      request.#shortlistCount = row.shortlistcount;
-      request.#saveCount = row.savecount;
-      return request;
+      return ServiceRequest.hydrateFromRow(row, category, owner);
     } finally {
       client.release();
     }
@@ -353,17 +348,8 @@ export class ServiceRequest {
         throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
       }
 
-      const request = Object.create(ServiceRequest.prototype);
-      request.#id = row.id;
-      request.#title = row.title;
-      request.#description = row.description;
-      request.#category = category;
-      request.#owner = owner;
-      request.#datePosted = new Date(row.dateposted);
-      request.#status = row.status;
-      request.#shortlistCount = row.shortlistcount;
-      request.#saveCount = row.savecount;
-      return request;
+      return ServiceRequest.hydrateFromRow(row, category, owner);
+
     } finally {
       client.release();
     }
@@ -387,16 +373,7 @@ export class ServiceRequest {
           throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
         }
 
-        const request = Object.create(ServiceRequest.prototype);
-        request.#id = row.id;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
-        request.#datePosted = new Date(row.dateposted);
-        request.#status = row.status;
-        request.#shortlistCount = row.shortlistcount;
-        request.#saveCount = row.savecount;
+        return ServiceRequest.hydrateFromRow(row, category, owner);
         return request;
       }));
     } finally {
@@ -423,17 +400,7 @@ export class ServiceRequest {
           throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
         }
 
-        const request = Object.create(ServiceRequest.prototype);
-        request.#id = row.id;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
-        request.#datePosted = new Date(row.dateposted);
-        request.#status = row.status;
-        request.#shortlistCount = row.shortlistcount;
-        request.#saveCount = row.savecount;
-        return request;
+        return ServiceRequest.hydrateFromRow(row, category, owner);
       }));
     } finally {
       client.release();
@@ -486,17 +453,7 @@ export class ServiceRequest {
           throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
         }
 
-        const request = Object.create(ServiceRequest.prototype);
-        request.#id = row.id;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
-        request.#datePosted = new Date(row.dateposted);
-        request.#status = row.status;
-        request.#shortlistCount = row.shortlistcount;
-        request.#saveCount = row.savecount;
-        return request;
+        return ServiceRequest.hydrateFromRow(row, category, owner);
       }));
     } finally {
       client.release();
@@ -526,17 +483,8 @@ export class ServiceRequest {
           throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
         }
 
-        const request = Object.create(ServiceRequest.prototype);
-        request.#id = row.id;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
-        request.#datePosted = new Date(row.dateposted);
-        request.#status = row.status;
-        request.#shortlistCount = row.shortlistcount;
-        request.#saveCount = row.savecount;
-        return request;
+        return ServiceRequest.hydrateFromRow(row, category, owner);
+
       }));
     } finally {
       client.release();
@@ -564,17 +512,7 @@ export class ServiceRequest {
           throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
         }
 
-        const request = Object.create(ServiceRequest.prototype);
-        request.#id = row.id;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
-        request.#datePosted = new Date(row.dateposted);
-        request.#status = row.status;
-        request.#shortlistCount = row.shortlistcount;
-        request.#saveCount = row.savecount;
-        return request;
+        return ServiceRequest.hydrateFromRow(row, category, owner);
       }));
     } finally {
       client.release();
@@ -626,17 +564,7 @@ export class ServiceRequest {
           throw new Error(`Invalid foreign key reference in ServiceRequest ${row.id}`);
         }
 
-        const request = Object.create(ServiceRequest.prototype);
-        request.#id = row.id;
-        request.#title = row.title;
-        request.#description = row.description;
-        request.#category = category;
-        request.#owner = owner;
-        request.#datePosted = new Date(row.dateposted);
-        request.#status = row.status;
-        request.#shortlistCount = row.shortlistcount;
-        request.#saveCount = row.savecount;
-        return request;
+        return ServiceRequest.hydrateFromRow(row, category, owner);
       }));
     } finally {
       client.release();

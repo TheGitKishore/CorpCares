@@ -61,8 +61,6 @@
   </form>
 
   <script type="module">
-    import { UserAdminLoginController } from '../controller/UserAdminLoginController.js';
-
     const form = document.getElementById('loginForm');
 
     form.addEventListener('submit', async (e) => {
@@ -72,12 +70,44 @@
       const rawPassword = document.getElementById('password').value;
 
       try {
-        const controller = await UserAdminLoginController.authenticate(username, rawPassword);
-        window.location.href = 'UserAdminLandingPage.html';
+        const res = await fetch('http://localhost:3000/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password: rawPassword })
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) throw new Error(data.error || 'Login failed');
+
+        localStorage.setItem("sessionToken", data.sessionToken);
+
+        const profile = data.user?.profile;
+
+        if (!profile) {
+          alert("Login succeeded but no profile assigned. Contact admin.");
+          return;
+        }
+
+        sessionStorage.setItem("userProfile", profile);
+
+        if (profile === "User Admin") {
+          window.location.href = "UserAdminLandingPage.html";
+        } else if (profile === "CSR") {
+          window.location.href = "CSRRepLandingPage.html";
+        } else if (profile === "PIN") {
+          window.location.href = "PINLandingPage.html";
+        } else if (profile === "Platform Manager") {
+          window.location.href = "PlatformManagerLandingPage.html";
+        } else {
+          alert("Unknown profile: " + profile);
+        }
+
       } catch (error) {
         alert(error.message);
       }
     });
   </script>
+  
 </body>
 </html>

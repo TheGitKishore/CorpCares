@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete User Profile</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    form {
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 30px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    label {
+      font-weight: bold;
+      color: #000;
+    }
+
+    input {
+      padding: 8px;
+      border: 1px solid #000;
+      background-color: #fff;
+      color: #000;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+  </style>
+</head>
+<body>
+  <form id="deleteForm">
+    <label for="profileName">Profile Name</label>
+    <input type="text" id="profileName" required />
+
+    <button type="submit">Delete Profile</button>
+  </form>
+
+  <script>
+    document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const roleName = document.getElementById('profileName').value.trim();
+      const token = localStorage.getItem("sessionToken") || "";
+
+      try {
+        const res = await fetch(`http://localhost:3000/api/profiles/${roleName}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || "Deletion failed");
+
+        alert(`Profile '${roleName}' deleted successfully.`);
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+  </script>
+
+</body>
+</html>

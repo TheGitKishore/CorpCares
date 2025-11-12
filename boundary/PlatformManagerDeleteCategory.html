@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete Category</title>
+  <style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial; }
+    form { border: 1px solid #000; padding: 30px; width: 300px; display: flex; flex-direction: column; gap: 15px; }
+    label { font-weight: bold; }
+    input { padding: 8px; border: 1px solid #000; }
+    button { padding: 10px; background: #000; color: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <form id="deleteCategoryForm">
+    <h3>Delete Category</h3>
+    <label for="deleteId">Category ID</label>
+    <input type="text" id="deleteId" required />
+    <button type="submit">Delete</button>
+  </form>
+
+  <script>
+    document.getElementById('deleteCategoryForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = document.getElementById('deleteId').value;
+      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      if (res.ok) alert('Category deleted successfully');
+      else alert('Failed to delete category');
+    });
+  </script>
+</body>
+</html>

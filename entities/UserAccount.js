@@ -1,14 +1,15 @@
 import { Pool } from 'pg';
 import { Password } from './Password.js';
 import { UserProfile } from './UserProfile.js';
+import { RolePermissions } from "../constants/Permissions.js";
 
 export class UserAccount {
   static #pool = new Pool({
-    user: '',
-    host: '',
-    database: '',
-    password: '',
-    port: 1234
+    user: "UserAdmin",
+    host: "localhost",
+    database: "taigawarriors",
+    password: "useradmin1234",
+    port: 5432  //default postgres port
   });
 
   #id;
@@ -36,18 +37,31 @@ export class UserAccount {
   get name() { return this.#name; }
   get email() { return this.#email; }
   get profile() { return this.#profile; }
+
   get dateCreated() { return this.#dateCreated; }
+  set dateCreated(v) {
+    if (!(v instanceof Date)) throw new TypeError("dateCreated must be a Date");
+    this.#dateCreated = v;
+  }
+
   get isActive() { return this.#isActive; }
-  get passwordHash() { return this.#passwordHash.hash; }
+  set isActive(v) {
+    if (typeof v !== "boolean") {
+      throw new TypeError("isActive must be a boolean");
+    }
+    this.#isActive = v;
+  } 
+
+  get passwordHash() { return this.#passwordHash; }
 
   // ═══════════════════════ Create ═══════════════════════
   async createUserAccount() {
     const client = await UserAccount.#pool.connect();
     try {
       const result = await client.query(
-        `INSERT INTO UserAccount (username, password, userProfileRoleName, email, name, dateCreated, isActive)
+        `INSERT INTO UserAccount (username, password, profile, email, fullname, dateCreated, isActive)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING userID`,
+         RETURNING id`,
         [
           this.#username,
           this.#passwordHash.hash,
@@ -58,7 +72,7 @@ export class UserAccount {
           this.#isActive
         ]
       );
-      this.#id = result.rows[0].userid;
+      this.#id = result.rows[0].id;
       return this.#id;
     } finally {
       client.release();
@@ -93,8 +107,8 @@ export class UserAccount {
     try {
       const result = await client.query(
         `UPDATE UserAccount
-         SET username = $1, name = $2, email = $3, password = $4, userProfileRoleName = $5, isActive = $6
-         WHERE userID = $7`,
+         SET username = $1, fullname = $2, email = $3, password = $4, profile = $5, isActive = $6
+         WHERE id = $7`,
         [
           this.#username,
           this.#name,
@@ -121,7 +135,7 @@ export class UserAccount {
   /**
    * Delete user account with cascade cleanup of all related data
    * Deletion order is important to maintain referential integrity:
-   * 1. Sessions (references userId)
+   * 1. Sessions (references id)
    * 2. CSRSavedRequestItem (references savedListId)
    * 3. CSRSavedRequest (references csrId)
    * 4. CSRShortlistItem (references shortlistId)
@@ -136,7 +150,7 @@ export class UserAccount {
 
       // 1. Delete all sessions for this user
       await client.query(
-        `DELETE FROM Session WHERE userId = $1`,
+        `DELETE FROM Session WHERE id = $1`,
         [this.#id]
       );
 
@@ -174,7 +188,7 @@ export class UserAccount {
 
       // 7. Finally, delete the user account
       const result = await client.query(
-        `DELETE FROM UserAccount WHERE userID = $1`,
+        `DELETE FROM UserAccount WHERE id = $1`,
         [this.#id]
       );
 
@@ -194,15 +208,18 @@ export class UserAccount {
     try {
       const result = await client.query(
         `SELECT ua.*, up.roleName, up.description, up.permissions
-         FROM UserAccount ua
-         JOIN UserProfile up ON ua.userProfileRoleName = up.roleName`
+          FROM UserAccount ua
+          LEFT JOIN UserProfile up ON ua.profile = up.roleName`
       );
 
       return result.rows.map(row => {
-        const profile = new UserProfile(row.rolename, row.description, row.permissions || []);
+        const profile =
+        row.rolename != null
+          ? new UserProfile(row.rolename, row.description)
+          : (row.profilekey ? new UserProfile(row.profilekey) : null);
         const passwordHash = Password.fromHash(row.password);
-        const account = new UserAccount(row.username, row.name, passwordHash, row.email, profile);
-        account.#id = row.userid;
+        const account = new UserAccount(row.username, row.fullname, passwordHash, row.email, profile);
+        account.#id = row.id;
         account.#dateCreated = new Date(row.datecreated);
         account.#isActive = row.isactive;
         return account;
@@ -218,19 +235,22 @@ export class UserAccount {
     try {
       const result = await client.query(
         `SELECT ua.*, up.roleName, up.description, up.permissions
-         FROM UserAccount ua
-         JOIN UserProfile up ON ua.userProfileRoleName = up.roleName
-         WHERE ua.userID = $1`,
+          FROM UserAccount ua
+          LEFT JOIN UserProfile up ON ua.profile = up.roleName
+          WHERE ua.id = $1 `,
         [userId]
       );
 
       if (result.rowCount === 0) return null;
       const row = result.rows[0];
 
-      const profile = new UserProfile(row.rolename, row.description, row.permissions || []);
+      const profile =
+        row.rolename != null
+          ? new UserProfile(row.rolename, row.description)
+          : (row.profilekey ? new UserProfile(row.profilekey) : null);
       const passwordHash = Password.fromHash(row.password);
-      const account = new UserAccount(row.username, row.name, passwordHash, row.email, profile);
-      account.#id = row.userid;
+      const account = new UserAccount(row.username, row.fullname, passwordHash, row.email, profile);
+      account.#id = row.id;
       account.#dateCreated = new Date(row.datecreated);
       account.#isActive = row.isactive;
       return account;
@@ -245,19 +265,30 @@ export class UserAccount {
     try {
       const result = await client.query(
         `SELECT ua.*, up.roleName, up.description, up.permissions
-         FROM UserAccount ua
-         JOIN UserProfile up ON ua.userProfileRoleName = up.roleName
-         WHERE ua.username = $1`,
+          FROM UserAccount ua
+          LEFT JOIN UserProfile up ON ua.profile = up.roleName
+          WHERE ua.username = $1`,
         [username]
       );
 
       if (result.rowCount === 0) return null;
       const row = result.rows[0];
 
-      const profile = new UserProfile(row.rolename, row.description, row.permissions || []);
+      const profile = new UserProfile(
+        row.rolename,                     // from SELECT alias
+        row.description ?? "",
+        row.permissions ?? RolePermissions[row.rolename] ?? []
+      );
+      
+      //new addition
+      if (!row.password) {
+        throw new Error(`Password is NULL/empty for user '${row.username}' (id ${row.id})`);
+      }
+      //
       const passwordHash = Password.fromHash(row.password);
-      const account = new UserAccount(row.username, row.name, passwordHash, row.email, profile);
-      account.#id = row.userid;
+      
+      const account = new UserAccount(row.username, row.fullname, passwordHash, row.email, profile);
+      account.#id = row.id;
       account.#dateCreated = new Date(row.datecreated);
       account.#isActive = row.isactive;
       return account;
@@ -271,7 +302,7 @@ export class UserAccount {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        `SELECT 1 FROM UserAccount WHERE userID = $1`,
+        `SELECT 1 FROM UserAccount WHERE id = $1`,
         [userId]
       );
       return result.rowCount > 0;

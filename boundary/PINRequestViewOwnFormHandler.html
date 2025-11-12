@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>View Own Requests</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
+      min-height: 100vh;
+    }
+
+    .container {
+      border: 1px solid #000;
+      padding: 30px;
+      width: 600px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #000;
+    }
+
+    .request {
+      border: 1px solid #000;
+      padding: 15px;
+      margin-bottom: 15px;
+      background-color: #f9f9f9;
+    }
+
+    .request h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #000;
+    }
+
+    .request p {
+      margin: 5px 0;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Your Service Requests</h2>
+    <div id="requestList">Loading...</div>
+  </div>
+
+  <script>
+    const sessionToken = localStorage.getItem("sessionToken");
+
+    async function loadOwnRequests() {
+      try {
+        const res = await fetch("http://localhost:3000/api/requests/own", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${sessionToken}`
+          }
+        });
+
+        const data = await res.json();
+        const container = document.getElementById("requestList");
+
+        if (!data.ok || !Array.isArray(data.requests)) {
+          container.innerHTML = `<p>Error: ${data.message || "Unable to load requests."}</p>`;
+          return;
+        }
+
+        if (data.requests.length === 0) {
+          container.innerHTML = `<p>You have no service requests.</p>`;
+          return;
+        }
+
+        container.innerHTML = "";
+        data.requests.forEach(req => {
+          const div = document.createElement("div");
+          div.className = "request";
+          div.innerHTML = `
+            <h3>${req.title}</h3>
+            <p><strong>Description:</strong> ${req.description}</p>
+            <p><strong>Category:</strong> ${req.categoryTitle}</p>
+            <p><strong>Status:</strong> ${req.status}</p>
+            <p><strong>Date Posted:</strong> ${new Date(req.datePosted).toLocaleString()}</p>
+          `;
+          container.appendChild(div);
+        });
+      } catch (err) {
+        document.getElementById("requestList").innerHTML = `<p>Error: ${err.message}</p>`;
+      }
+    }
+
+    loadOwnRequests();
+  </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lookup User Profile</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    form {
+      border: 1px solid #000;
+      padding: 30px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    select, button {
+      padding: 10px;
+      border: 1px solid #000;
+      background-color: #fff;
+      color: #000;
+    }
+
+    button {
+      background-color: #000;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+  </style>
+</head>
+<body>
+  <form id="lookupForm">
+    <label for="roleSelect">Select Profile to Update</label>
+    <select id="roleSelect" required>
+      <option value="">-- Choose Role --</option>
+    </select>
+
+    <button type="submit">Proceed to Update</button>
+  </form>
+
+  <script>
+    const token = localStorage.getItem("sessionToken") || "";
+
+    async function loadProfiles() {
+      try {
+        const res = await fetch("http://localhost:3000/api/profiles", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load profiles");
+
+        const select = document.getElementById('roleSelect');
+        data.profiles.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.roleName;
+          opt.textContent = p.roleName;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        alert("Error loading profiles: " + err.message);
+      }
+    }
+
+    document.getElementById('lookupForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const roleName = document.getElementById('roleSelect').value;
+      if (!roleName) return alert("Please select a role");
+
+      sessionStorage.setItem('roleName', roleName);
+      window.location.href = 'UserProfileUpdateFormHandler.html';
+    });
+
+    loadProfiles();
+  </script>
+</body>
+</html>

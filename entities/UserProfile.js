@@ -1,21 +1,25 @@
 import { Pool } from 'pg';
+import { RolePermissions } from "../constants/Permissions.js";
 
 export class UserProfile {
   static #pool = new Pool({
-    user: '',
-    host: '',
-    database: '',
-    password: '',
-    port: 1234
+    user: "UserAdmin",
+    host: "localhost",
+    database: "taigawarriors",
+    password: "useradmin1234",
+    port: 5432
   });
 
   #roleName;
   #description;
-  #permissions; 
-  constructor(roleName, description, permissions = []) {
+  #permissions;
+
+  constructor(roleName, description, permissions = null) {
     this.#roleName = roleName;
     this.#description = description;
-    this.#permissions = Array.isArray(permissions) ? permissions : [];
+    this.#permissions = Array.isArray(permissions)
+      ? permissions
+      : RolePermissions[roleName] ?? [];
   }
 
   get roleName() { return this.#roleName; }
@@ -24,24 +28,29 @@ export class UserProfile {
   get description() { return this.#description; }
   set description(value) { this.#description = value; }
 
-  get permissions() { return [...this.#permissions]; } // Return copy to prevent external modification
-  set permissions(value) { 
+  get permissions() { return this.#permissions.slice(); }
+  set permissions(value) {
     this.#permissions = Array.isArray(value) ? value : [];
   }
 
-  // Check if this profile has a specific permission
   hasPermission(action) {
     return this.#permissions.includes(action);
   }
 
-  // Check if this profile has any of the given permissions
   hasAnyPermission(actions = []) {
     return actions.some(action => this.#permissions.includes(action));
   }
 
-  // Check if this profile has all of the given permissions
   hasAllPermissions(actions = []) {
     return actions.every(action => this.#permissions.includes(action));
+  }
+
+  toJSON() {
+    return {
+      roleName: this.#roleName,
+      description: this.#description,
+      permissions: this.#permissions
+    };
   }
 
   // ═══════════════ Create ═══════════════════════════════════════════════════
@@ -100,7 +109,7 @@ export class UserProfile {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(`SELECT * FROM UserProfile`);
-      return result.rows.map(row => 
+      return result.rows.map(row =>
         new UserProfile(row.rolename, row.description, row.permissions || [])
       );
     } finally {

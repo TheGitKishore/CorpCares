@@ -63,65 +63,52 @@
     <label for="password">Password</label>
     <input type="password" id="password" required />
 
-    <label for="roleId">Role</label>
-    <select id="roleId" required>
-      <option value="">Select a role</option>
+    <label for="roleName">Role Name</label>
+    <select name="roleName" id="roleName">
+      <option value="CSR Rep">CSR Rep</option>
+      <option value="CV">CV</option>
+      <option value="PIN">PIN</option>
     </select>
 
     <button type="submit">Create Account</button>
   </form>
 
   <script type="module">
-  const form = document.getElementById('userForm');
-  const roleSelect = document.getElementById('roleId');
 
-  async function loadRoles() {
-    try {
-      const res = await fetch('/api/roles');
-      const roles = await res.json();
+    const form = document.getElementById('userForm');
 
-      roles.forEach(role => {
-        const option = document.createElement('option');
-        option.value = role.roleName; // Use roleName as identifier
-        option.textContent = role.roleName; // or description if you prefer
-        roleSelect.appendChild(option);
-      });
-    } catch (err) {
-      console.error('Failed to load roles:', err);
-    }
-  }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-  loadRoles();
+      const username = document.getElementById('username').value.trim();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const rawPassword = document.getElementById('password').value;
+      const roleName = document.getElementById('roleName').value.trim();
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+      try {
 
-    const username = document.getElementById('username').value.trim();
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const rawPassword = document.getElementById('password').value;
-    const roleName = roleSelect.value;
-
-    try {
-      const res = await fetch('/api/users', {
+        const res = await fetch('http://localhost:3000/api/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password: rawPassword, email, name, roleName })
+        body: JSON.stringify({
+          username,
+          fullName: name,
+          email,
+          rawPassword,
+          profile: roleName    // must match userprofile.rolename in DB
+        }),
       });
 
       const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Create failed');
 
-      if (res.ok) {
-        alert(`User created successfully with ID: ${data.userId}`);
-        form.reset();
-      } else {
-        alert(`Error: ${data.error}`);
-      }
+      alert(`User created successfully with ID: ${data.id}`);
+      form.reset();
     } catch (err) {
-      alert(`Network error: ${err.message}`);
+      alert(err.message);
     }
   });
   </script>
-
 </body>
 </html>

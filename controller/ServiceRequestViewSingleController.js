@@ -43,8 +43,35 @@ export class ServiceRequestViewSingleController {
         message: "Service request retrieved successfully" 
       };
 
-    } catch (error) {
+    } 
+    catch (error) {
       throw new Error(`Failed to retrieve service request: ${error.message}`);
     }
   }
+
+  async viewOwnRequests(sessionToken) {
+  try {
+    const auth = await AuthorizationHelper.checkPermission(sessionToken, Permissions.VIEW_OWN_REQUESTS);
+    if (!auth.authorized) {
+      return { success: false, requests: [], message: auth.message };
+    }
+
+    const requests = await ServiceRequest.findByOwnerId(auth.userAccount.id);
+    return {
+      success: true,
+      requests: requests.map(req => ({
+        id: req.id,
+        title: req.title,
+        description: req.description,
+        categoryTitle: req.category.title,
+        status: req.status,
+        datePosted: req.datePosted
+      })),
+      message: "Own service requests retrieved successfully"
+    };
+  } catch (error) {
+    return { success: false, requests: [], message: `Failed to retrieve own requests: ${error.message}` };
+  }
+}
+
 }

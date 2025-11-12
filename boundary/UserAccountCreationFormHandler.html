@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Account Creation</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    form {
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 30px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    label {
+      font-weight: bold;
+      color: #000;
+    }
+
+    input {
+      padding: 8px;
+      border: 1px solid #000;
+      background-color: #fff;
+      color: #000;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+  </style>
+</head>
+<body>
+  <form id="userForm">
+    <label for="username">Username</label>
+    <input type="text" id="username" required />
+
+    <label for="name">Full Name</label>
+    <input type="text" id="name" required />
+
+    <label for="email">Email</label>
+    <input type="email" id="email" required />
+
+    <label for="password">Password</label>
+    <input type="password" id="password" required />
+
+    <label for="roleName">Role Name</label>
+    <select name="roleName" id="roleName">
+      <option value>Select A Role</option>
+      <option value="CSR Rep">CSR Rep</option>
+      <option value="User Admin">User Admin</option>
+      <option value="PIN">PIN</option>
+      <option value="Platform Manager">Platform Manager</option>
+    </select>
+
+    <button type="submit">Create Account</button>
+  </form>
+
+  <script type="module">
+
+    const form = document.getElementById('userForm');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const rawPassword = document.getElementById('password').value;
+      const roleName = document.getElementById('roleName').value.trim();
+
+      try {
+
+        const res = await fetch('http://localhost:3000/api/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          fullName: name,
+          email,
+          rawPassword,
+          profile: roleName    // must match userprofile.rolename in DB
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Create failed');
+
+      alert(`User created successfully with ID: ${data.id}`);
+      form.reset();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+  </script>
+</body>
+</html>

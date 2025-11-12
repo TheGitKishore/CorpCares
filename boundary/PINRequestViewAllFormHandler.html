@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>View PIN Request</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    form {
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 30px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+
+    #results {
+      margin-top: 20px;
+      width: 100%;
+      font-size: 14px;
+      color: #000;
+    }
+
+    .account {
+      border-top: 1px solid #000;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <form id="viewForm">
+    <button type="submit">View All PIN Request</button>
+    <div id="results"></div>
+  </form>
+
+  <script>
+    document.getElementById('viewForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const sessionToken = localStorage.getItem("sessionToken");
+
+      try {
+        const res = await fetch('http://localhost:3000/api/requests', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${sessionToken}`
+          }
+        });
+
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.message);
+
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = data.requests.map(request => `
+          <div class="PINRequest">
+            <strong>Request Title:</strong> ${request.title}<br/>
+            <strong>Description:</strong> ${request.description}<br/>
+            <strong>Status:</strong> ${request.status}<br/>
+          </div>
+        `).join('');
+      } catch (error) {
+        document.getElementById('results').innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    });
+  </script>
+
+</body>
+</html>

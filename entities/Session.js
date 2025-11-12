@@ -4,11 +4,11 @@ import crypto from 'crypto';
 
 export class Session {
   static #pool = new Pool({
-    user: '',
-    host: '',
-    database: '',
-    password: '',
-    port: 1234
+    user: "UserAdmin",
+    host: "localhost",
+    database: "taigawarriors",
+    password: "useradmin1234",
+    port: 5432  //default postgres port
   });
 
   // Configurable session timeout (in minutes)
@@ -49,8 +49,9 @@ export class Session {
     const client = await Session.#pool.connect();
     try {
       const result = await client.query(
-        `INSERT INTO Session (sessionToken, userId, loginTime, lastActivity, isActive)
-         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        `INSERT INTO session (sessiontoken, userid, logintime, lastactivity, isactive)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id`,
         [
           this.#sessionToken,
           this.#userAccount.id,
@@ -72,7 +73,7 @@ export class Session {
     const client = await Session.#pool.connect();
     try {
       await client.query(
-        `UPDATE Session SET lastActivity = $1 WHERE id = $2`,
+        `UPDATE session SET lastactivity = $1 WHERE id = $2`,
         [this.#lastActivity.toISOString(), this.#id]
       );
     } finally {
@@ -86,7 +87,7 @@ export class Session {
     const client = await Session.#pool.connect();
     try {
       const result = await client.query(
-        `UPDATE Session SET isActive = false WHERE id = $1`,
+        `UPDATE session SET isactive = false WHERE id = $1`,
         [this.#id]
       );
       return result.rowCount === 1;
@@ -100,8 +101,9 @@ export class Session {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        `SELECT id, sessionToken, userId, loginTime, lastActivity, isActive
-         FROM Session WHERE sessionToken = $1 AND isActive = true`,
+        `SELECT id, sessiontoken, userid, logintime, lastactivity, isactive
+          FROM session
+          WHERE sessiontoken = $1 AND isactive = true`,
         [sessionToken]
       );
 

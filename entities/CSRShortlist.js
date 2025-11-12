@@ -5,11 +5,11 @@ import { RoleNames } from '../constants/RoleNames.js';
 
 export class CSRShortlist {
   static #pool = new Pool({
-    user: '',
-    host: '',
-    database: '',
-    password: '',
-    port: 1234
+    user: "UserAdmin",
+    host: "localhost",
+    database: "taigawarriors",
+    password: "useradmin1234",
+    port: 5432  //default postgres port
   });
 
   #id;

@@ -31,9 +31,16 @@ export class Password {
     return this.#hash;
   }
 
-  static fromHash(storedHash) {
-    const instance = Object.create(Password.prototype);
-    instance.#hash = storedHash;
-    return instance;
+   static fromHash(storedHash) {
+    if (storedHash == null) {
+      throw new TypeError("storedHash must be a non-empty string");
+    }
+    const s = String(storedHash).trim();
+    if (s.length === 0) {
+      throw new TypeError("storedHash must be a non-empty string");
+    }
+    const p = new Password(); // ensure private brand exists
+    p.#hash = s;              
+    return p;
   }
 }
