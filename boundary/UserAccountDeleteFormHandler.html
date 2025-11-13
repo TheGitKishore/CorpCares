@@ -80,7 +80,7 @@
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || "Delete failed");
 
-        if (data.deleted) {
+        if (res.ok) {
           alert(`User account with ID ${userId} deleted successfully.`);
           form.reset();
         } else {

@@ -19,40 +19,69 @@
 
   <table>
     <thead>
-      <tr><th>ID</th><th>Title</th><th>Description</th><th>Status</th></tr>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Description</th>
+        <th>Category</th>
+        <th>Status</th>
+      </tr>
     </thead>
     <tbody id="requestList">
-      <tr><td colspan="4" style="text-align:center;">No data</td></tr>
+      <tr><td colspan="5" style="text-align:center;">No data</td></tr>
     </tbody>
   </table>
 
   <script type="module">
-    import { CSRViewRequestController } from '../controller/CSRViewRequestController.js';
-
     const btn = document.getElementById('loadBtn');
     const tbody = document.getElementById('requestList');
 
     btn.addEventListener('click', async () => {
-      const controller = new CSRViewRequestController();
       try {
-        const requests = await controller.getAllRequests();
-        render(requests);
+        const token = localStorage.getItem('sessionToken') || '';
+        const res = await fetch('http://localhost:3000/api/csr', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        console.log('Fetched requests:', data);
+
+        if (data.ok) render(data.requests);
+        else alert(data.message);
+
       } catch (err) {
         alert(err.message);
       }
     });
 
-    function render(data) {
+    function render(rows) {
       tbody.innerHTML = '';
-      if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No requests found</td></tr>`;
+
+      if (!rows || !rows.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No requests found</td></tr>`;
         return;
       }
-      for (const r of data) {
+
+      rows.forEach(r => {
+        // Convert class instance to plain object
+        const request = {
+          id: r.id ?? r.requestid ?? '',
+          title: r.title ?? r.requesttitle ?? '',
+          description: r.description ?? r.requestdescription ?? '',
+          category: r.categoryTitle ?? r.category ?? '',
+          status: r.status ?? r.requeststatus ?? ''
+        };
+
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.description}</td><td>${r.status}</td>`;
+        tr.innerHTML = `
+          <td>${request.id}</td>
+          <td>${request.title}</td>
+          <td>${request.description}</td>
+          <td>${request.category}</td>
+          <td>${request.status}</td>
+        `;
         tbody.appendChild(tr);
-      }
+      });
     }
   </script>
 </body>

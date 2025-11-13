@@ -14,6 +14,7 @@ export class ServiceRequestViewAllController {
       }
 
       const requests = await ServiceRequest.viewAllServiceRequests();
+      console.log('Requests before return:', requests);
       
       return { 
         success: true, 

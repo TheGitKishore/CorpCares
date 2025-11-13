@@ -26,50 +26,92 @@
       <option value="education">Education</option>
       <option value="environment">Environment</option>
       <option value="health">Health</option>
+      <option value="General">General</option>
       <option value="other">Other</option>
     </select>
 
-    <label for="completionDate">Completion Date</label>
-    <input type="date" id="completionDate" />
+    <label for="datePosted">Date Posted</label>
+    <input type="date" id="datePosted" />
 
     <button type="submit">Filter</button>
   </form>
 
   <table>
-    <thead><tr><th>ID</th><th>Title</th><th>Service Type</th><th>Completion Date</th></tr></thead>
-    <tbody id="results"><tr><td colspan="4" style="text-align:center;">No results</td></tr></tbody>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Service Type</th>
+        <th>Completion Date</th>
+      </tr>
+    </thead>
+    <tbody id="results">
+      <tr><td colspan="4" style="text-align:center;">No results</td></tr>
+    </tbody>
   </table>
 
   <script type="module">
-    import { CSRCompletedRequestController } from '../controller/CSRCompletedRequestController.js';
-    const form = document.getElementById('filterForm');
-    const results = document.getElementById('results');
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log("Script loaded");
 
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      const serviceType = document.getElementById('serviceType').value;
-      const completionDate = document.getElementById('completionDate').value;
-      const controller = new CSRCompletedRequestController();
-      try {
-        const data = await controller.filterCompletedRequests(serviceType, completionDate);
-        render(data);
-      } catch (err) {
-        alert(err.message);
-      }
-    });
+      const form = document.getElementById('filterForm');
+      const results = document.getElementById('results');
 
-    function render(data) {
-      results.innerHTML = '';
-      if (!data.length) {
-        results.innerHTML = `<tr><td colspan="4" style="text-align:center;">No results</td></tr>`;
-        return;
-      }
-      data.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.serviceType}</td><td>${r.completionDate}</td>`;
-        results.appendChild(tr);
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        console.log("Form submitted");
+
+        const serviceType = document.getElementById('serviceType').value;
+        const datePosted = document.getElementById('datePosted').value;
+        const token = localStorage.getItem('sessionToken') || '';
+
+        const query = new URLSearchParams({
+          category: serviceType,
+          endDate: datePosted
+        });
+
+        try {
+          const res = await fetch(`http://localhost:3000/api/requests/completed/view?${query.toString()}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          const data = await res.json();
+          console.log("Full response:", data);
+
+          if (!Array.isArray(data.requests)) {
+            alert("Response format error: 'requests' is not an array");
+            return;
+          }
+
+          render(data.requests);
+        } catch (err) {
+          console.error("Fetch error:", err);
+          alert("Error: " + err.message);
+        }
       });
-    }
+
+      function render(data) {
+        results.innerHTML = '';
+
+        if (!Array.isArray(data) || data.length === 0) {
+          results.innerHTML = `<tr><td colspan="4" style="text-align:center;">No results</td></tr>`;
+          return;
+        }
+
+        data.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${r.id}</td>
+            <td>${r.title}</td>
+            <td>${r.serviceType}</td>
+            <td>${r.completionDate}</td>
+          `;
+          results.appendChild(tr);
+        });
+      }
+
+      console.log("Script initialized and listener attached");
+    });
   </script>
 </body>
 </html>

@@ -11,6 +11,7 @@ export class ServiceRequest {
     port: 5432  //default postgres port
   });
 
+
   #id;
   #title;
   #description;
@@ -115,22 +116,54 @@ export class ServiceRequest {
 
 // ═══════════════════════ Hydrating Rows ═══════════════════════
 
-static hydrateFromRow(row, category, owner) {
-  const request = new ServiceRequest(row.title, row.description, category, owner);
-  request.#id = row.id;
-  request.#datePosted = new Date(row.dateposted);
-  request.#status = row.status;
-  request.#shortlistCount = row.shortlistcount;
-  request.#saveCount = row.savecount;
-  return request;
-}
+// static hydrateFromRow(row, category, owner) {
+//   const request = new ServiceRequest(row.title, row.description, category, owner);
+//   request.#id = row.id;
+//   request.#datePosted = new Date(row.dateposted);
+//   request.#status = row.status;
+//   request.#shortlistCount = row.shortlistcount;
+//   request.#saveCount = row.savecount;
+  
+//     // Return an object with the proper structure for frontend rendering
+//   return {
+//     id: request.id,
+//     title: request.title,
+//     description: request.description,
+//     categoryTitle: request.category.title,  // Correct property name for category title
+//     status: request.status,
+//     datePosted: request.datePosted.toISOString(),  // Return date in ISO format (or another format if needed)
+//     shortlistCount: request.shortlistCount,
+//     saveCount: request.saveCount
+//   };
+// }
+
+  static hydrateFromRow(row, category, owner) {
+    // Create a new ServiceRequest instance
+    const request = new ServiceRequest(
+      row.title, 
+      row.description, 
+      category, 
+      owner
+    );
+    
+    // Set private properties on the instance
+    request.#id = row.id;
+    request.#datePosted = new Date(row.dateposted);  // Convert to Date object
+    request.#status = row.status;
+    request.#shortlistCount = row.shortlistcount;
+    request.#saveCount = row.savecount;
+
+    // Return the ServiceRequest instance itself, not just a plain object
+    return request;  // Now, you are returning the actual ServiceRequest instance
+  }
+
 
   // ═══════════════════════ Create ═══════════════════════
   async createServiceRequest() {
     const client = await ServiceRequest.#pool.connect();
     try {
       const result = await client.query(
-        `INSERT INTO ServiceRequest (title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount)
+        `INSERT INTO ServiceRequest (title, description, categorytitle, ownerId, datePosted, status, shortlistCount, saveCount)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id`,
         [
@@ -267,7 +300,7 @@ static hydrateFromRow(row, category, owner) {
     const client = await ServiceRequest.#pool.connect();
     try {
       const result = await client.query(
-        `DELETE FROM ServiceRequest WHERE id = $1`,
+        `DELETE FROM servicerequest WHERE id = $1`,
         [this.#id]
       );
       return result.rowCount === 1;
@@ -308,7 +341,7 @@ static hydrateFromRow(row, category, owner) {
     try {
       const result = await client.query(
         `SELECT id, title, description, categoryTitle, ownerId, datePosted, status, shortlistCount, saveCount
-         FROM ServiceRequest WHERE id = $1`,
+         FROM servicerequest WHERE id = $1`,
         [id]
       );
 
@@ -678,68 +711,90 @@ static hydrateFromRow(row, category, owner) {
     }
   }
 
-  /**
-   * Get monthly statistics for reporting
-   * Returns raw numbers for further processing
-   */
-  static async getMonthlyStatistics(monthStart, monthEnd) {
-    const client = await this.#pool.connect();
-    try {
-      const categoryResult = await client.query(
-        `SELECT 
-          categoryTitle,
-          COUNT(*) as totalRequests,
-          SUM(CASE WHEN status = 'Complete' THEN 1 ELSE 0 END) as completedRequests,
-          AVG(shortlistCount) as avgShortlistCount,
-          AVG(saveCount) as avgSaveCount
-         FROM ServiceRequest 
-         WHERE datePosted >= $1 AND datePosted < $2
-         GROUP BY categoryTitle
-         ORDER BY totalRequests DESC`,
-        [monthStart.toISOString(), monthEnd.toISOString()]
-      );
+  static async getShortlistCountsByOwner(ownerId) {
+  const client = await this.#pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, title, status, shortlistCount
+       FROM ServiceRequest
+       WHERE ownerId = $1
+       ORDER BY datePosted DESC`,
+      [ownerId]
+    );
 
-      const weeklyResult = await client.query(
-        `SELECT 
-          DATE_TRUNC('week', datePosted) as week,
-          COUNT(*) as count,
-          SUM(CASE WHEN status = 'Complete' THEN 1 ELSE 0 END) as completed
-         FROM ServiceRequest 
-         WHERE datePosted >= $1 AND datePosted < $2
-         GROUP BY week
-         ORDER BY week`,
-        [monthStart.toISOString(), monthEnd.toISOString()]
-      );
-
-      const categoryBreakdown = categoryResult.rows.map(row => ({
-        category: row.categorytitle,
-        totalRequests: parseInt(row.totalrequests),
-        completedRequests: parseInt(row.completedrequests),
-        completionRate: parseFloat((row.completedrequests / row.totalrequests).toFixed(4)),
-        avgShortlistCount: parseFloat((row.avgshortlistcount || 0).toFixed(2)),
-        avgSaveCount: parseFloat((row.avgsavecount || 0).toFixed(2))
-      }));
-
-      const weeklyTrend = weeklyResult.rows.map(row => ({
-        week: new Date(row.week).toISOString().split('T')[0],
-        totalRequests: parseInt(row.count),
-        completedRequests: parseInt(row.completed)
-      }));
-
-      const totalRequests = categoryBreakdown.reduce((sum, item) => sum + item.totalRequests, 0);
-      const totalCompleted = categoryBreakdown.reduce((sum, item) => sum + item.completedRequests, 0);
-
-      return {
-        totalRequests: totalRequests,
-        totalCompleted: totalCompleted,
-        overallCompletionRate: totalRequests > 0 
-          ? parseFloat((totalCompleted / totalRequests).toFixed(4))
-          : 0,
-        categoryBreakdown: categoryBreakdown,
-        weeklyTrend: weeklyTrend
-      };
-    } finally {
-      client.release();
-    }
+    return result.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      status: row.status,
+      shortlistCount: row.shortlistcount
+    }));
+  } finally {
+    client.release();
   }
+}
+
+/**
+ * Get monthly statistics for reporting
+ * Returns raw numbers for further processing
+ */
+static async getMonthlyStatistics(monthStart, monthEnd) {
+  const client = await this.#pool.connect();
+  try {
+    const categoryResult = await client.query(
+      `SELECT 
+        categoryTitle,
+        COUNT(*) as totalRequests,
+        SUM(CASE WHEN status = 'Complete' THEN 1 ELSE 0 END) as completedRequests,
+        AVG(shortlistCount) as avgShortlistCount,
+        AVG(saveCount) as avgSaveCount
+       FROM ServiceRequest 
+       WHERE datePosted >= $1 AND datePosted < $2
+       GROUP BY categoryTitle
+       ORDER BY totalRequests DESC`,
+      [monthStart.toISOString(), monthEnd.toISOString()]
+    );
+
+    const weeklyResult = await client.query(
+      `SELECT 
+        DATE_TRUNC('week', datePosted) as week,
+        COUNT(*) as count,
+        SUM(CASE WHEN status = 'Complete' THEN 1 ELSE 0 END) as completed
+       FROM ServiceRequest 
+       WHERE datePosted >= $1 AND datePosted < $2
+       GROUP BY week
+       ORDER BY week`,
+      [monthStart.toISOString(), monthEnd.toISOString()]
+    );
+
+    const categoryBreakdown = categoryResult.rows.map(row => ({
+      category: row.categorytitle,
+      totalRequests: parseInt(row.totalrequests),
+      completedRequests: parseInt(row.completedrequests),
+      completionRate: parseFloat((row.completedrequests / row.totalrequests).toFixed(4)),
+      avgShortlistCount: parseFloat((Number(row.avgshortlistcount) || 0).toFixed(2)),
+      avgSaveCount: parseFloat((Number(row.avgsavecount) || 0).toFixed(2))
+    }));
+
+    const weeklyTrend = weeklyResult.rows.map(row => ({
+      week: new Date(row.week).toISOString().split('T')[0],
+      totalRequests: parseInt(row.count),
+      completedRequests: parseInt(row.completed)
+    }));
+
+    const totalRequests = categoryBreakdown.reduce((sum, item) => sum + item.totalRequests, 0);
+    const totalCompleted = categoryBreakdown.reduce((sum, item) => sum + item.completedRequests, 0);
+
+    return {
+      totalRequests: totalRequests,
+      totalCompleted: totalCompleted,
+      overallCompletionRate: totalRequests > 0 
+        ? parseFloat((totalCompleted / totalRequests).toFixed(4))
+        : 0,
+      categoryBreakdown: categoryBreakdown,
+      weeklyTrend: weeklyTrend
+    };
+  } finally {
+    client.release();
+  }
+}
 }

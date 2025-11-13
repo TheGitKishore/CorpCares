@@ -11,15 +11,59 @@
 </head>
 <body>
   <h3>Generate Daily Volunteer Activity Report</h3>
-  <button onclick="generateReport()">Generate</button>
+  <button id="loadReport">Generate</button>
+  <input type="date" id="reportDate" />
   <pre id="report"></pre>
 
   <script>
-    async function generateReport() {
-      const res = await fetch('/api/reports/daily');
-      const data = await res.json();
-      document.getElementById('report').textContent = JSON.stringify(data, null, 2);
-    }
+    document.getElementById('loadReport').addEventListener('click', async () => {
+      const token = localStorage.getItem("sessionToken") || '';
+      const date = document.getElementById("reportDate").value;
+      const resultsDiv = document.getElementById("report");
+      resultsDiv.innerHTML = '';
+
+      if (!token) {
+        resultsDiv.innerHTML = `<p>Session token missing. Please log in.</p>`;
+        return;
+      }
+
+      const query = date ? `?date=${date}` : '';
+
+      try {
+        const res = await fetch(`http://localhost:3000/api/reports/daily${query}`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await res.json();
+        if (!data.success || !data.report) {
+          throw new Error(data.message || "Unexpected response");
+        }
+
+        const { date: reportDate, totalRequestsCreated, totalRequestsCompleted, categoryBreakdown } = data.report;
+
+        resultsDiv.innerHTML = `
+          <strong>Report Date:</strong> ${reportDate}<br/>
+          <strong>Total Requests Created:</strong> ${totalRequestsCreated}<br/>
+          <strong>Total Requests Completed:</strong> ${totalRequestsCompleted}<br/>
+        `;
+
+        resultsDiv.innerHTML += categoryBreakdown.map(cat => `
+          <div class="category">
+            <strong>Category:</strong> ${cat.category}<br/>
+            <strong>Created:</strong> ${cat.requestsCreated}<br/>
+            <strong>Completed:</strong> ${cat.requestsCompleted}
+          </div>
+        `).join('');
+      } catch (error) {
+        resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    });
   </script>
+</body>
+</html>
 </body>
 </html>

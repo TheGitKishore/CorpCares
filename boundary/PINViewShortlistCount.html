@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Shortlist Counts</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #shortlistPage {
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 30px;
+      width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+
+    #results {
+      margin-top: 20px;
+      width: 100%;
+      font-size: 14px;
+      color: #000;
+    }
+
+    .request {
+      border-top: 1px solid #000;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="shortlistPage">
+    <button id="loadCounts">View My Shortlist Counts</button>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    document.getElementById('loadCounts').addEventListener('click', async () => {
+      const token = localStorage.getItem("sessionToken") || '';
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      try {
+        const res = await fetch('http://localhost:3000/api/requests/shortlist-counts', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.counts)) {
+          throw new Error(data.message || "Unexpected response");
+        }
+
+        if (data.counts.length === 0) {
+          resultsDiv.innerHTML = `<p>No requests found.</p>`;
+          return;
+        }
+
+        resultsDiv.innerHTML = data.counts.map(req => `
+          <div class="request">
+            <strong>Title:</strong> ${req.title}<br/>
+            <strong>Status:</strong> ${req.status}<br/>
+            <strong>Shortlist Count:</strong> ${req.shortlistCount}
+          </div>
+        `).join('');
+      } catch (error) {
+        resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

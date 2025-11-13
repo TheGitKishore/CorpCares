@@ -36,6 +36,13 @@
       color: #000;
     }
 
+    select {
+      padding: 8px;
+      border: 1px solid #000;
+      background-color: #fff;
+      color: #000;
+    }
+
     button {
       padding: 10px;
       background-color: #000;
@@ -49,17 +56,21 @@
     }
 
     textarea {
-    resize: none;
-    width: 295px;
-    height: 100px;
+      resize: none;
+      width: 295px;
+      height: 100px;
     }
-
   </style>
 </head>
 <body>
   <form id="userForm">
     <label for="requestTitle">Request Title</label>
     <input type="text" id="requestTitle" required />
+
+    <label for="category">Category</label>
+    <select id="category" required>
+      <option value="">Loading categories...</option>
+    </select>
 
     <label for="description">Description</label>
     <textarea id="description"></textarea>
@@ -68,12 +79,52 @@
   </form>
 
   <script>
+    const categorySelect = document.getElementById('category');
+
+    // Fetch categories dynamically
+    async function loadCategories() {
+      try {
+        const sessionToken = localStorage.getItem("sessionToken"); // get your token
+        const res = await fetch('http://localhost:3000/api/categories', {
+          headers: {
+            'Authorization': `Bearer ${sessionToken}`
+          }
+        });
+        if (!res.ok) throw new Error('Failed to load categories');
+        const categories = await res.json();
+
+        categorySelect.innerHTML = '<option value="">Select category</option>';
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.id;
+          option.textContent = cat.title;
+          categorySelect.appendChild(option);
+        });
+      } catch (err) {
+        categorySelect.innerHTML = '<option value="">Error loading categories</option>';
+        console.error(err);
+      }
+    }
+
+    loadCategories();
+
     document.getElementById('userForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const requestTitle = document.getElementById('requestTitle').value.trim();
       const description = document.getElementById('description').value.trim();
+      const categoryId = categorySelect.value;
       const sessionToken = localStorage.getItem("sessionToken");
+      
+
+      console.log({ requestTitle, description, categoryId, sessionToken });
+      console.log(typeof categoryId)
+
+
+      if (!categoryId) {
+        alert('Please select a category');
+        return;
+      }
 
       try {
         const res = await fetch('http://localhost:3000/api/requests', {
@@ -82,17 +133,16 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${sessionToken}`
           },
-          body: JSON.stringify({ title: requestTitle, description, categoryTitle: "General" })
+          body: JSON.stringify({ title: requestTitle, description, categoryId })
         });
 
         const data = await res.json();
-        if (!data.ok) throw new Error(data.message);
+        if (!res.ok) throw new Error(data.error || data.message);
         alert(`Request created successfully with ID: ${data.requestId}`);
       } catch (error) {
         alert(error.message);
       }
     });
   </script>
-
 </body>
 </html>

@@ -22,18 +22,42 @@
   </form>
 
   <script type="module">
-    import { CSRShortlistController } from '../controller/CSRShortlistController.js';
-
     const form = document.getElementById('saveForm');
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
       const requestId = document.getElementById('requestId').value.trim();
-      const controller = new CSRShortlistController();
+      if (!requestId) {
+        alert("Please enter a valid Request ID.");
+        return;
+      }
+
+      const sessionToken = localStorage.getItem('sessionToken');
+      if (!sessionToken) {
+        alert("Session token is missing. Please log in again.");
+        return;
+      }
+
       try {
-        await controller.saveToShortlist(requestId);
-        alert('Request successfully added to your shortlist!');
+        const response = await fetch('http://localhost:3000/api/csr/shortlist', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({ requestId })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          alert(data.message || 'Request successfully added to your shortlist!');
+        } else {
+          console.error("Server response error:", data);  // Log server-side error message
+          throw new Error(data.message || 'Something went wrong');
+        }
       } catch (err) {
+        console.error("Error during fetch:", err);  // More detailed log here
         alert(err.message);
       }
     });

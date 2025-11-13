@@ -30,19 +30,31 @@
   </table>
 
   <script type="module">
-    import { CSRShortlistController } from '../controller/CSRShortlistController.js';
     const form = document.getElementById('searchForm');
     const tbody = document.getElementById('results');
 
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const keyword = document.getElementById('keyword').value.trim();
-      const controller = new CSRShortlistController();
+      const token = localStorage.getItem('sessionToken') || '';
+
       try {
-        const results = await controller.searchShortlist(keyword);
-        render(results);
+        const res = await fetch(`http://localhost:3000/api/csr/shortlist/search?keyword=${encodeURIComponent(keyword)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+        console.log("Search response:", data);
+
+        if (!data.success || !Array.isArray(data.requests)) {
+          alert("Search failed: " + data.message);
+          return;
+        }
+
+        render(data.requests);
       } catch (err) {
-        alert(err.message);
+        console.error("Fetch error:", err);
+        alert("Error: " + err.message);
       }
     });
 
@@ -58,6 +70,8 @@
         tbody.appendChild(tr);
       });
     }
-  </script>
+
+    console.log("Shortlist search script initialized");
+</script>
 </body>
 </html>

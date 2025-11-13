@@ -15,23 +15,59 @@
 <body>
   <h3>Search Volunteer Service Categories</h3>
   <input type="text" id="searchInput" placeholder="Enter name or type..." />
-  <button onclick="searchCategories()">Search</button>
+  <button id="searchBtn">Search</button>
   <table>
-    <thead><tr><th>ID</th><th>Name</th><th>Description</th></tr></thead>
+    <thead>
+      <tr><th>ID</th><th>Name</th><th>Description</th></tr>
+    </thead>
     <tbody id="results"></tbody>
   </table>
 
-  <script>
-    async function searchCategories() {
-      const query = document.getElementById('searchInput').value;
-      const res = await fetch(`/api/categories/search?query=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      const tbody = document.getElementById('results');
-      tbody.innerHTML = '';
-      data.forEach(cat => {
-        tbody.innerHTML += `<tr><td>${cat.id}</td><td>${cat.name}</td><td>${cat.description}</td></tr>`;
-      });
-    }
+  <script type="module">
+    const searchBtn = document.getElementById('searchBtn');
+    const resultsTbody = document.getElementById('results');
+
+    searchBtn.addEventListener('click', async () => {
+      const query = document.getElementById('searchInput').value.trim();
+      const sessionToken = localStorage.getItem('sessionToken');
+
+      if (!sessionToken) {
+        alert("You must be logged in to search categories");
+        return;
+      }
+
+      if (!query) {
+        alert("Please enter a search query");
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3000/api/categories/search?query=${encodeURIComponent(query)}`, {
+          headers: { 'Authorization': 'Bearer ' + sessionToken }
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          alert(`Error: ${error.error}`);
+          return;
+        }
+
+        const data = await res.json();
+        resultsTbody.innerHTML = '';
+
+        data.forEach(cat => {
+          resultsTbody.innerHTML += `
+            <tr>
+              <td>${cat.id}</td>
+              <td>${cat.title}</td>
+              <td>${cat.description}</td>
+            </tr>`;
+        });
+
+      } catch (err) {
+        alert(`Network error: ${err.message}`);
+      }
+    });
   </script>
 </body>
 </html>

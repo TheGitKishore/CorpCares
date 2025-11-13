@@ -35,10 +35,14 @@
       const name = document.getElementById('newName').value;
       const description = document.getElementById('newDesc').value;
 
-      const res = await fetch(`/api/categories/${id}`, {
+      const sessionToken = localStorage.getItem('sessionToken');
+      const res = await fetch(`http://localhost:3000/api/categories/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ title: name, description })
       });
       const data = await res.json();
       if (res.ok) alert('Category updated successfully');

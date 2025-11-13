@@ -14,29 +14,38 @@ export class CSRShortlistViewController {
       const auth = await AuthorizationHelper.checkPermission(sessionToken, Permissions.VIEW_SHORTLISTED_REQUESTS);
       
       if (!auth.authorized) {
+        console.log('Authorization failed');
         return { success: false, shortlist: null, message: auth.message };
       }
 
       const csrUser = auth.userAccount;
+      console.log(`Fetching shortlist for CSR user with ID: ${csrUser.id}`);
 
       // Get shortlist for this CSR
       const shortlist = await CSRShortlist.getByCSR(csrUser.id);
 
       if (!shortlist) {
+        console.log('No shortlist found');
         return { 
           success: true, 
-          shortlist: null,
+          shortlist: { serviceRequests: [] }, // Always return an empty array if no shortlist found
           message: "No shortlist found. Create one by shortlisting your first request." 
         };
       }
 
+      console.log(`Found ${shortlist.serviceRequests.length} shortlisted requests`);
+
+      // Return shortlist object with serviceRequests explicitly placed inside the object
       return { 
         success: true, 
-        shortlist: shortlist,
+        shortlist: { 
+          serviceRequests: shortlist.serviceRequests || []  // Ensure it's always an array
+        },
         message: `Found ${shortlist.serviceRequests.length} shortlisted requests` 
       };
 
     } catch (error) {
+      console.error('Error in viewShortlist:', error);
       throw new Error(`Failed to retrieve shortlist: ${error.message}`);
     }
   }

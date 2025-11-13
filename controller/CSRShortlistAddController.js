@@ -6,9 +6,9 @@ import { Permissions } from '../constants/Permissions.js';
 export class CSRShortlistAddController {
 
   /**
-   * Add a service request to the CSR's shortlist
-   * Auto-creates shortlist if it doesn't exist
-   * Increments the ServiceRequest's shortlistCount
+   * Add a service request to the CSR's shortlist.
+   * Auto-creates shortlist if it doesn't exist.
+   * Increments the ServiceRequest's shortlistCount.
    */
   async addToShortlist(sessionToken, serviceRequestId) {
     try {
@@ -21,17 +21,23 @@ export class CSRShortlistAddController {
 
       const csrUser = auth.userAccount;
 
-      // Get or create shortlist
+      // Get or create shortlist (corrected call)
       let shortlist = await CSRShortlist.getByCSR(csrUser.id);
       if (!shortlist) {
         shortlist = new CSRShortlist(csrUser);
-        await shortlist.createShortlist();
+        await shortlist.createShortlist();  // Create the shortlist for the CSR
       }
 
-      // Find the service request
+      // Find the service request and make sure it is an instance of ServiceRequest
       const serviceRequest = await ServiceRequest.findById(serviceRequestId);
+      
       if (!serviceRequest) {
         return { success: false, itemId: null, message: `Service request ${serviceRequestId} not found` };
+      }
+
+      // Ensure it's an instance of ServiceRequest
+      if (!(serviceRequest instanceof ServiceRequest)) {
+        throw new TypeError("Expected serviceRequest to be ServiceRequest");
       }
 
       // Check if already in shortlist

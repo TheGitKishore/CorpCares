@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search by Category</title>
+  <title>Search PIN Requests by Category</title>
   <style>
     body { font-family: Arial; padding: 30px; color: #000; }
     form { border: 1px solid #000; padding: 20px; width: 350px; display: flex; flex-direction: column; gap: 15px; }
@@ -14,54 +14,123 @@
   </style>
 </head>
 <body>
-  <h2>Search PIN Requests by Category</h2>
+  <h2>Search Requests by Category</h2>
+
   <form id="categoryForm">
     <label for="category">Select Category</label>
-    <select id="category">
-      <option value="">-- Select --</option>
-      <option value="community">Community</option>
-      <option value="education">Education</option>
-      <option value="health">Health</option>
-      <option value="environment">Environment</option>
-      <option value="other">Other</option>
+    <select id="category" required>
+      <option value="">Loading categories...</option>
     </select>
     <button type="submit">Search</button>
   </form>
 
   <table>
-    <thead><tr><th>ID</th><th>Title</th><th>Category</th></tr></thead>
-    <tbody id="results"><tr><td colspan="3" style="text-align:center;">No results</td></tr></tbody>
+    <thead>
+      <tr><th>ID</th><th>Title</th><th>Description</th><th>Category</th><th>Status</th></tr>
+    </thead>
+    <tbody id="results">
+      <tr><td colspan="5" style="text-align:center;">No results</td></tr>
+    </tbody>
   </table>
 
   <script type="module">
-    import { CSRSearchController } from '../controller/CSRSearchController.js';
-    const form = document.getElementById('categoryForm');
+    const categorySelect = document.getElementById('category');
     const results = document.getElementById('results');
+    const form = document.getElementById('categoryForm');
 
+    // Load categories dynamically
+    async function loadCategories() {
+      try {
+        const token = localStorage.getItem('sessionToken') || '';
+        const res = await fetch('http://localhost:3000/api/categories', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to load categories');
+        const categories = await res.json();
+
+        categorySelect.innerHTML = '<option value="">Select category</option>';
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.title; // use title for searching
+          option.textContent = cat.title;
+          categorySelect.appendChild(option);
+        });
+      } catch (err) {
+        categorySelect.innerHTML = '<option value="">Error loading categories</option>';
+        console.error("Error loading categories:", err);
+      }
+    }
+
+    loadCategories();
+
+    // Handle form submit
     form.addEventListener('submit', async e => {
       e.preventDefault();
-      const category = document.getElementById('category').value;
-      const controller = new CSRSearchController();
+      const categoryTitle = categorySelect.value;
+      const token = localStorage.getItem('sessionToken') || '';
+
+      if (!categoryTitle) {
+        alert('Please select a category');
+        return;
+      }
+
       try {
-        const data = await controller.searchByCategory(category);
-        render(data);
+        const res = await fetch(`http://localhost:3000/api/csr/search?category=${encodeURIComponent(categoryTitle)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        // Debugging the response after it is fetched
+        console.log("Search results:", data);
+
+        if (data.success) {
+          console.log("Requests array:", data.requests);  
+          render(data.requests);
+        } else {
+          alert(data.message);
+        }
+
       } catch (err) {
         alert(err.message);
       }
     });
 
-    function render(data) {
-      results.innerHTML = '';
-      if (!data.length) {
-        results.innerHTML = `<tr><td colspan="3" style="text-align:center;">No results</td></tr>`;
-        return;
+    
+    // Render table rows
+    function render(rows) {
+        results.innerHTML = '';
+
+        if (!Array.isArray(rows) || rows.length === 0) {
+          results.innerHTML = `<tr><td colspan="5" style="text-align:center;">No requests found</td></tr>`;
+          return;
+        }
+
+        rows.forEach((r, i) => {
+          console.log("Raw row:", r);
+          // Use Object.getOwnPropertyNames to extract non-enumerable keys
+          const plain = {};
+          Object.getOwnPropertyNames(r).forEach(key => {
+            plain[key] = r[key];
+          });
+
+          console.log(`Row ${i}:`, plain); // Confirm what keys are visible
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${plain.id ?? ''}</td>
+            <td>${plain.title ?? ''}</td>
+            <td>${plain.description ?? ''}</td>
+            <td>${plain.categoryTitle ?? plain.category?.title ?? 'Unknown'}</td>
+            <td>${plain.status ?? 'Unknown'}</td>
+          `;
+          results.appendChild(tr);
+        });
       }
-      data.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.category}</td>`;
-        results.appendChild(tr);
-      });
-    }
+
+
   </script>
+
 </body>
 </html>
+
+

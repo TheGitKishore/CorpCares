@@ -14,8 +14,8 @@ export class ServiceCategory {
   #title;
   #description;
 
-  constructor(title, description) {
-    this.#id = null;
+  constructor(id, title, description) {
+    this.#id = id ;
     this.#title = title;
     this.#description = description;
   }
@@ -26,6 +26,16 @@ export class ServiceCategory {
 
   get description() { return this.#description; }
   set description(value) { this.#description = value; }
+
+  // ─── Add this inside your ServiceCategory class ───
+  toJSON() {
+    return {
+      id: this.#id,
+      title: this.#title,
+      description: this.#description
+    };
+  }
+
 
   // ─── Create ───────────────────────────────
   async createServiceCategory() {
@@ -79,9 +89,7 @@ export class ServiceCategory {
     try {
       const result = await client.query(`SELECT id, title, description FROM ServiceCategory`);
       return result.rows.map(row => {
-        const cat = new ServiceCategory(row.title, row.description);
-        cat.#id = row.id;
-        return cat;
+        return new ServiceCategory(row.id, row.title, row.description);
       });
     } finally {
       client.release();
@@ -98,9 +106,7 @@ export class ServiceCategory {
       );
       if (result.rowCount === 0) return null;
       const row = result.rows[0];
-      const cat = new ServiceCategory(row.title, row.description);
-      cat.#id = row.id;
-      return cat;
+      return new ServiceCategory(row.id, row.title, row.description);
     } finally {
       client.release();
     }
@@ -111,16 +117,19 @@ export class ServiceCategory {
     const client = await this.#pool.connect();
     try {
       const result = await client.query(
-        `SELECT id, title, description FROM ServiceCategory WHERE title=$1`,
+        `SELECT id, title, description FROM ServiceCategory WHERE LOWER(title) = LOWER($1)`,
         [title]
+
       );
       if (result.rowCount === 0) return null;
       const row = result.rows[0];
-      const cat = new ServiceCategory(row.title, row.description);
+      const cat = new ServiceCategory(row.id, row.title, row.description);
       cat.#id = row.id;
       return cat;
     } finally {
       client.release();
     }
   }
+
 }
+

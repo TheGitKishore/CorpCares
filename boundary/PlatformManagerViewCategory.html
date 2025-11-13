@@ -20,18 +20,45 @@
     <tbody id="categoryList"></tbody>
   </table>
 
-  <script>
+  <script type="module">
     async function loadCategories() {
-      const res = await fetch('/api/categories');
-      const categories = await res.json();
-      const tbody = document.getElementById('categoryList');
-      tbody.innerHTML = '';
-      categories.forEach(cat => {
-        const row = `<tr><td>${cat.id}</td><td>${cat.name}</td><td>${cat.description}</td></tr>`;
-        tbody.innerHTML += row;
-      });
+      const sessionToken = localStorage.getItem('sessionToken');
+      if (!sessionToken) {
+        alert("You must be logged in to view categories");
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3000/api/categories', {
+          headers: { 'Authorization': 'Bearer ' + sessionToken } // if needed
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          alert(`Error: ${error.error}`);
+          return;
+        }
+
+        const categories = await res.json();
+        console.log(categories);
+        const tbody = document.getElementById('categoryList');
+        tbody.innerHTML = '';
+
+        categories.forEach(cat => {
+          console.log(cat.id, cat.title, cat.description);
+          const row = `<tr>
+            <td>${cat.id}</td>
+            <td>${cat.title}</td>
+            <td>${cat.description}</td>
+          </tr>`;
+          tbody.innerHTML += row;
+        });
+      } catch (err) {
+        alert(`Network error: ${err.message}`);
+      }
     }
     loadCategories();
   </script>
+
 </body>
 </html>

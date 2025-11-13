@@ -7,7 +7,7 @@ export class UserProfile {
     host: "localhost",
     database: "taigawarriors",
     password: "useradmin1234",
-    port: 5432
+    port: 5432  //default postgres port
   });
 
   #roleName;

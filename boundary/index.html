@@ -78,6 +78,8 @@
 
         const data = await res.json();
 
+        console.log("Login response:", data);
+
         if (!data.ok) throw new Error(data.error || 'Login failed');
 
         localStorage.setItem("sessionToken", data.sessionToken);
@@ -93,7 +95,7 @@
 
         if (profile === "User Admin") {
           window.location.href = "UserAdminLandingPage.html";
-        } else if (profile === "CSR") {
+        } else if (profile === "CSR Rep") {
           window.location.href = "CSRRepLandingPage.html";
         } else if (profile === "PIN") {
           window.location.href = "PINLandingPage.html";

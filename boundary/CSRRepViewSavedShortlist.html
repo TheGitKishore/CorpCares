@@ -23,32 +23,67 @@
   </table>
 
   <script type="module">
-    import { CSRShortlistController } from '../controller/CSRShortlistController.js';
     const btn = document.getElementById('loadBtn');
     const tbody = document.getElementById('shortlist');
 
     btn.addEventListener('click', async () => {
-      const controller = new CSRShortlistController();
       try {
-        const list = await controller.getShortlist();
-        render(list);
+        // Get the session token from localStorage
+        const token = localStorage.getItem('sessionToken') || '';  // Ensure you have the correct key in localStorage
+        console.log('Session Token:', token);  // Log token for verification
+
+        // Fetch the shortlist data from the backend
+        const response = await fetch('http://localhost:3000/api/csr/shortlistSearch', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`  // Include the token in the Authorization header
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch shortlist: ${response.statusText}`);
+        }
+
+        const data = await response.json(); // Parse the JSON response
+        console.log('Response Data:', data);  // Log the entire response for debugging
+        console.log('Service Requests:', data.shortlist.serviceRequests);
+
+        if (data && data.shortlist) {
+          console.log('Shortlist Object:', data.shortlist);
+        }
+        
+
+        // Check if the 'serviceRequests' field inside 'shortlist' is an array
+        if (data.shortlist && Array.isArray(data.shortlist.serviceRequests)) {
+          render(data.shortlist.serviceRequests);  // If it's an array, pass it to render
+        } else {
+          alert('Shortlist serviceRequests data is not an array');  // If not an array, show an alert
+        }
+
       } catch (err) {
-        alert(err.message);
+        alert(err.message);  // Show any errors
       }
     });
 
+
     function render(data) {
-      tbody.innerHTML = '';
-      if (!data.length) {
+      tbody.innerHTML = '';  // Clear the table body
+
+      if (!data || data.length === 0) {
         tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No saved requests</td></tr>`;
         return;
       }
+
       data.forEach(r => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.category}</td>`;
+        tr.innerHTML = `<td>${r.id}</td><td>${r.title}</td><td>${r.description}</td>`;  // Use description instead of category
         tbody.appendChild(tr);
       });
     }
+
   </script>
+
+
 </body>
 </html>

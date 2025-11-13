@@ -90,25 +90,44 @@
 
       try {
 
-        const res = await fetch('http://localhost:3000/api/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        const sessionToken = localStorage.getItem("sessionToken");
+        console.log("Session token being sent:", sessionToken);
+
+        console.log("Creating account with:", {
           username,
           fullName: name,
           email,
           rawPassword,
-          profile: roleName    // must match userprofile.rolename in DB
-        }),
-      });
+          profile: roleName,
+          sessionToken
+        });
 
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Create failed');
+        const res = await fetch('http://localhost:3000/api/accounts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({
+            username,
+            fullName: name,
+            email,
+            rawPassword,
+            profile: roleName
+          }),
+        });
 
-      alert(`User created successfully with ID: ${data.id}`);
-      form.reset();
-    } catch (err) {
-      alert(err.message);
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          const errMsg = data.message || data.error || 'Create failed';
+          console.error("[CREATE ERROR]", errMsg);
+          throw new Error(errMsg);
+        }
+
+        alert(`User created successfully with ID: ${data.userId}`);
+        form.reset();
+      } catch (err) {
+        alert(err.message);
     }
   });
   </script>

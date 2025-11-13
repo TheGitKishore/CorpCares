@@ -53,38 +53,42 @@
 </head>
 <body>
   <form id="viewForm">
-    <button type="submit">View All PIN Request</button>
+    <button type="submit">View Completed Request</button>
     <div id="results"></div>
   </form>
 
-  <script type="module">
-    import { PINRequestViewController } from '../controller/PINRequestViewController.js';
-
-    const form = document.getElementById('viewForm');
-    const resultsDiv = document.getElementById('results');
-
-    form.addEventListener('submit', async (e) => {
+  <script>
+    document.getElementById('viewForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const controller = new PINRequestViewController();
+      const sessionToken = localStorage.getItem("sessionToken");
 
       try {
-        const requests = await controller.viewPINRequest();
+        const res = await fetch('http://localhost:3000/api/requests/matches/completed', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${sessionToken}`
+          }
+        });
 
-        if (Array.isArray(requests) && requests.length > 0) {
-          resultsDiv.innerHTML = requests.map(request => `
-            <div class="PINRequest">
-              <strong>Request Title:</strong> ${request.requestTitle}<br/>
-              <strong>Description:</strong> ${request.descriptiom}<br/>
-            </div>
-          `).join('');
-        } else {
-          resultsDiv.innerHTML = '<p>No PIN Request found.</p>';
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.requests)) {
+          throw new Error(data.message || "Unexpected response");
         }
+
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = data.requests.map(request => `
+          <div class="PINRequest">
+            <strong>Request Title:</strong> ${request.title}<br/>
+            <strong>Description:</strong> ${request.description}<br/>
+            <strong>Status:</strong> ${request.status}<br/>
+          </div>
+        `).join('');
       } catch (error) {
-        resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+        document.getElementById('results').innerHTML = `<p>Error: ${error.message}</p>`;
       }
-    });
-  </script>
+      });
+    </script>
+
 </body>
 </html>

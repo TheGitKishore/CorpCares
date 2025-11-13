@@ -7,19 +7,76 @@
   <style>
     body { font-family: Arial; padding: 30px; }
     pre { border: 1px solid #000; padding: 10px; background: #f9f9f9; }
+    .category { margin: 10px 0; padding: 10px; border-left: 3px solid #007bff; }
   </style>
 </head>
 <body>
   <h3>Generate Weekly Volunteer Participation Report</h3>
-  <button onclick="generateReport()">Generate</button>
+  <button id="loadReport">Generate</button>
+  <input type="date" id="reportDate" />
   <pre id="report"></pre>
 
   <script>
-    async function generateReport() {
-      const res = await fetch('/api/reports/weekly');
-      const data = await res.json();
-      document.getElementById('report').textContent = JSON.stringify(data, null, 2);
-    }
+    document.getElementById('loadReport').addEventListener('click', async () => {
+      const token = localStorage.getItem("sessionToken") || '';
+      const date = document.getElementById("reportDate").value;
+      const resultsDiv = document.getElementById("report");
+      resultsDiv.innerHTML = '';
+
+      if (!token) {
+        resultsDiv.innerHTML = `<p>Session token missing. Please log in.</p>`;
+        return;
+      }
+
+      const query = date ? `?date=${date}` : '';
+
+      try {
+        const res = await fetch(`http://localhost:3000/api/reports/weekly${query}`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await res.json();
+        if (!data.success || !data.report) {
+          throw new Error(data.message || "Unexpected response");
+        }
+
+        const { 
+          weekStart, 
+          weekEnd, 
+          totalRequests, 
+          pendingRequests, 
+          matchedRequests, 
+          completedRequests,
+          categoryBreakdown 
+        } = data.report;
+
+        resultsDiv.innerHTML = `
+          <strong>Week Period:</strong> ${weekStart} to ${weekEnd}<br/>
+          <strong>Total Requests:</strong> ${totalRequests}<br/>
+          <strong>Pending Requests:</strong> ${pendingRequests}<br/>
+          <strong>Matched Requests:</strong> ${matchedRequests}<br/>
+          <strong>Completed Requests:</strong> ${completedRequests}<br/>
+          <br/>
+          <strong>Category Breakdown:</strong><br/>
+        `;
+
+        resultsDiv.innerHTML += categoryBreakdown.map(cat => `
+          <div class="category">
+            <strong>Category:</strong> ${cat.category}<br/>
+            <strong>Pending:</strong> ${cat.pending}<br/>
+            <strong>Matched:</strong> ${cat.matched}<br/>
+            <strong>Completed:</strong> ${cat.completed}<br/>
+            <strong>Total:</strong> ${cat.total}
+          </div>
+        `).join('');
+      } catch (error) {
+        resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    });
   </script>
 </body>
 </html>

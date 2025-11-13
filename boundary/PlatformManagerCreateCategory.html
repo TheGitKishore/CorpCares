@@ -25,25 +25,46 @@
     <button type="submit">Create Category</button>
   </form>
 
-  <script>
+  <script type="module">
     const form = document.getElementById('createCategoryForm');
+
     form.addEventListener('submit', async e => {
       e.preventDefault();
+
       const name = document.getElementById('categoryName').value.trim();
       const description = document.getElementById('categoryDesc').value.trim();
 
+      // Get session token stored after login
+      const sessionToken = localStorage.getItem('sessionToken');
+      if (!sessionToken) {
+        alert("You must be logged in to create a category");
+        return;
+      }
+
       try {
-        const res = await fetch('/api/categories', {
+        const res = await fetch('http://localhost:3000/api/categories', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, description })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`  // <-- token goes here
+          },
+          body: JSON.stringify({ title: name, description })
         });
+
         const data = await res.json();
-        if (res.ok) alert(`Category created: ${data.name}`);
-        else alert(`Error: ${data.error}`);
-        form.reset();
-      } catch (err) { alert(`Network error: ${err.message}`); }
+
+        if (res.ok) {
+          alert(`Category created: ${data.name}`);
+          form.reset();
+        } else {
+          alert(`Error: ${data.error}`);
+        }
+
+      } catch (err) {
+        alert(`Network error: ${err.message}`);
+      }
     });
   </script>
+
 </body>
 </html>

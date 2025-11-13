@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>View PIN Request</title>
+  <style>
+    body {
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    form {
+      background-color: #fff;
+      border: 1px solid #000;
+      padding: 30px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #333;
+    }
+
+    #results {
+      margin-top: 20px;
+      width: 100%;
+      font-size: 14px;
+      color: #000;
+    }
+
+    .account {
+      border-top: 1px solid #000;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <form id="searchForm">
+    <select id="category">
+      <option value="">-- Select Category --</option>
+      <option value="Community">Community</option>
+      <option value="Education">Education</option>
+      <option value="Environment">Environment</option>
+      <option value="Health">Health</option>
+      <option value="General">General</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <input type="date" id="startDate" />
+    <input type="date" id="endDate" />
+    <button type="submit">Search Completed Requests</button>
+    <div id="results"></div>
+  </form>
+
+  <script>
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const token = localStorage.getItem("sessionToken") || '';
+      const category = document.getElementById('category').value.trim();
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = ''; // Clear previous results
+
+      // Frontend validation: require at least one valid filter
+      const hasCategory = category.length > 0;
+      const hasStart = startDate && !isNaN(new Date(startDate).getTime());
+      const hasEnd = endDate && !isNaN(new Date(endDate).getTime());
+
+      if (!hasCategory && !hasStart && !hasEnd) {
+        resultsDiv.innerHTML = `<p>Please select at least one filter (category or date range).</p>`;
+        return;
+      }
+
+      const query = new URLSearchParams({
+        ...(hasCategory && { category }),
+        ...(hasStart && { startDate }),
+        ...(hasEnd && { endDate })
+      });
+
+      try {
+        const res = await fetch(`http://localhost:3000/api/requests/matches/search?${query.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.requests)) {
+          throw new Error(data.message || "Unexpected response");
+        }
+
+        if (data.requests.length === 0) {
+          resultsDiv.innerHTML = `<p>No matching completed requests found.</p>`;
+          return;
+        }
+
+        resultsDiv.innerHTML = data.requests.map(request => `
+          <div class="PINRequest">
+            <strong>Request Title:</strong> ${request.title}<br/>
+            <strong>Description:</strong> ${request.description}<br/>
+            <strong>Status:</strong> ${request.status}<br/>
+          </div>
+        `).join('');
+      } catch (error) {
+        resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    });
+  </script>
+
+</body>
+</html>

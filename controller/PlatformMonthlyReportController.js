@@ -3,30 +3,37 @@ import { AuthorizationHelper } from '../helpers/AuthorizationHelper.js';
 import { Permissions } from '../constants/Permissions.js';
 
 export class PlatformMonthlyReportController {
-  
-  /**
-   * Generate monthly report showing overall volunteer engagement by category
-   * Returns statistics for the specified month (defaults to current month)
-   */
   async generateMonthlyReport(sessionToken, year = null, month = null) {
     try {
-      // Check authorization - must have VIEW_STATISTICS permission
+      if (!sessionToken || typeof sessionToken !== 'string' || sessionToken.trim().length === 0) {
+        return { success: false, report: null, message: "Valid session token is required" };
+      }
+
       const auth = await AuthorizationHelper.checkPermission(
-        sessionToken, 
+        sessionToken,
         Permissions.VIEW_STATISTICS
       );
-      
+
       if (!auth.authorized) {
         return { success: false, report: null, message: auth.message };
       }
 
       // Default to current month if not specified
       const now = new Date();
-      const targetYear = year !== null ? year : now.getFullYear();
-      const targetMonth = month !== null ? month : now.getMonth() + 1; // 1-12
+      const targetYear = year !== null ? parseInt(year) : now.getFullYear();
+      const targetMonth = month !== null ? parseInt(month) : now.getMonth() + 1; // 1-12
+
+      // Validate year
+      if (isNaN(targetYear) || targetYear < 2000 || targetYear > 2100) {
+        return {
+          success: false,
+          report: null,
+          message: "Invalid year. Must be between 2000 and 2100"
+        };
+      }
 
       // Validate month
-      if (targetMonth < 1 || targetMonth > 12) {
+      if (isNaN(targetMonth) || targetMonth < 1 || targetMonth > 12) {
         return {
           success: false,
           report: null,
@@ -41,11 +48,10 @@ export class PlatformMonthlyReportController {
       const monthEnd = new Date(targetYear, targetMonth, 1);
       monthEnd.setHours(0, 0, 0, 0);
 
-      // Get monthly statistics
       const report = await ServiceRequest.getMonthlyStatistics(monthStart, monthEnd);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         report: {
           year: targetYear,
           month: targetMonth,
@@ -54,7 +60,6 @@ export class PlatformMonthlyReportController {
         },
         message: "Monthly report generated successfully"
       };
-
     } catch (error) {
       throw new Error(`Failed to generate monthly report: ${error.message}`);
     }

@@ -69,7 +69,8 @@ export const RolePermissions = {
     Permissions.UPDATE_CATEGORY,
     Permissions.DELETE_CATEGORY,
     Permissions.VIEW_ALL_CATEGORIES,
-    Permissions.VIEW_CATEGORY
+    Permissions.VIEW_CATEGORY,
+    Permissions.VIEW_STATISTICS
   ],
   
   'CSR Rep': [
@@ -80,7 +81,8 @@ export const RolePermissions = {
     Permissions.UNSHORTLIST_REQUEST,
     Permissions.VIEW_SAVED_REQUESTS,
     Permissions.VIEW_SHORTLISTED_REQUESTS,
-    Permissions.UPDATE_REQUEST_STATUS
+    Permissions.UPDATE_REQUEST_STATUS,
+    Permissions.VIEW_ALL_CATEGORIES
   ],
   
   'PIN': [
@@ -88,6 +90,7 @@ export const RolePermissions = {
     Permissions.UPDATE_OWN_REQUEST,
     Permissions.DELETE_OWN_REQUEST,
     Permissions.VIEW_OWN_REQUESTS,
-    Permissions.VIEW_STATISTICS
+    Permissions.VIEW_STATISTICS,
+    Permissions.VIEW_ALL_CATEGORIES
   ]
 };

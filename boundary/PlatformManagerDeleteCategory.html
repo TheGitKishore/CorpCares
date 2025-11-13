@@ -24,9 +24,18 @@
     document.getElementById('deleteCategoryForm').addEventListener('submit', async e => {
       e.preventDefault();
       const id = document.getElementById('deleteId').value;
-      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-      if (res.ok) alert('Category deleted successfully');
-      else alert('Failed to delete category');
+      const token = localStorage.getItem('sessionToken'); // or however you store it
+
+      const res = await fetch(`http://localhost:3000/api/categories/${id}`, { 
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+      if (res.ok) alert(data.message);
+      else alert(data.error);
     });
   </script>
 </body>

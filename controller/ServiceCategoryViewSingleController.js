@@ -33,4 +33,5 @@ export class ServiceCategoryViewSingleController {
       throw new Error(`Failed to retrieve category: ${error.message}`);
     }
   }
+
 }
